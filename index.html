@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Painel dos carros do CEAC: pendências, rotina, histórico e documentos.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23a32226'/%3E%3Ctext x='16' y='22' font-family='Arial Black,Arial' font-weight='900' font-size='14' fill='white' text-anchor='middle'%3ECEAC%3C/text%3E%3C/svg%3E">
+<title>Frota CEAC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Poppins:wght@500;600;700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&family=JetBrains+Mono:wght@700&display=swap">
+<style>
+html,body{margin:0}[hidden]{display:none!important}img{max-width:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+
+/* Layout: identidade CEAC — cabeçalho branco com a marca em vermelho, abas sublinhadas, conteúdo em linhas com divisórias finas em vez de caixinhas */
+:root{
+  --bg:#f4f3f3; --surface:#ffffff; --sunk:#f0eeee; --ink:#1d1718; --muted:#6a6062; --line:#e2dcdc; --line-strong:#cfc6c7;
+  --brand:#a32226; --brand-ink:#ffffff; --brand-soft:#f8e3e3; --plate:#0b3a8c;
+  --ok:#23683f; --ok-bg:#def1e5; --warn:#8a5a00; --warn-bg:#fcecc6; --bad:#b0181b; --bad-bg:#fde0de; --none:#6a6062; --none-bg:#ece8e8;
+  --f-mark:"Archivo Black","Arial Black",Impact,sans-serif;
+  --f-head:"Poppins",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-body:"Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141011; --surface:#1d1718; --sunk:#181314; --ink:#f1eaea; --muted:#ab9fa1; --line:#33292a; --line-strong:#463a3c;
+  --brand:#e5585b; --brand-ink:#1b0a0b; --brand-soft:#3a1d1e; --plate:#2f66c9;
+  --ok:#82d5a3; --ok-bg:#183a27; --warn:#f2c460; --warn-bg:#3f300e; --bad:#ff8f87; --bad-bg:#4a1d1b; --none:#ab9fa1; --none-bg:#2a2223;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141011; --surface:#1d1718; --sunk:#181314; --ink:#f1eaea; --muted:#ab9fa1; --line:#33292a; --line-strong:#463a3c;
+  --brand:#e5585b; --brand-ink:#1b0a0b; --brand-soft:#3a1d1e; --plate:#2f66c9;
+  --ok:#82d5a3; --ok-bg:#183a27; --warn:#f2c460; --warn-bg:#3f300e; --bad:#ff8f87; --bad-bg:#4a1d1b; --none:#ab9fa1; --none-bg:#2a2223;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.inner{max-width:1180px;margin:0 auto}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.15}
+h2{font-family:var(--f-head);font-size:22px;font-weight:700}
+h3{font-family:var(--f-head);font-size:18px;font-weight:600}
+.eyebrow{font-family:var(--f-head);font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--brand)}
+.label{font-family:var(--f-head);font-size:11.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+/* cabeçalho */
+.head{background:var(--surface);border-bottom:1px solid var(--line);padding-block:18px 0}
+.head .inner{display:flex;flex-direction:column;gap:14px}
+.brandrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px}
+.mark{font-family:var(--f-mark);font-size:40px;line-height:.9;color:var(--brand);letter-spacing:.01em;text-shadow:2px 2px 0 var(--surface),4px 4px 0 var(--brand)}
+.brandrow .t{display:flex;flex-direction:column;gap:2px}
+.brandrow .t b{font-family:var(--f-head);font-weight:700;font-size:20px;color:var(--ink);letter-spacing:.02em}
+.brandrow .date{color:var(--muted);font-size:14px}
+.stats{margin-left:auto;display:flex;flex-wrap:wrap;gap:6px 18px}
+.stat{display:flex;align-items:baseline;gap:6px}
+.stat b{font-family:var(--f-head);font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat span{font-size:14px;color:var(--muted)}
+.stat.bad b{color:var(--bad)} .stat.warn b{color:var(--warn)}
+.tabs{display:flex;gap:4px;overflow-x:auto;margin-inline:-4px}
+.tab{border:0;background:none;color:var(--muted);padding:10px 14px 12px;font-family:var(--f-head);font-size:15px;font-weight:600;border-bottom:3px solid transparent;white-space:nowrap;cursor:pointer}
+.tab[aria-selected="true"]{color:var(--brand);border-bottom-color:var(--brand)}
+.tab .n{font-size:12px;background:var(--brand);color:var(--brand-ink);border-radius:999px;padding:1px 7px;margin-left:6px}
+main{padding-block:24px 64px}
+main .inner{display:flex;flex-direction:column;gap:20px}
+/* controles */
+button{font:inherit;cursor:pointer}
+.btn{border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:8px;padding:8px 14px;font-family:var(--f-head);font-weight:600;font-size:14px;display:inline-flex;align-items:center;gap:6px;text-decoration:none;line-height:1.3}
+.btn:hover{border-color:var(--brand);color:var(--brand)}
+.btn.brand{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.btn.brand:hover{filter:brightness(1.07);color:var(--brand-ink)}
+.btn.small{padding:5px 11px;font-size:13px}
+.link{background:none;border:0;color:var(--brand);font-family:var(--f-head);font-weight:600;font-size:13.5px;padding:2px 0;text-decoration:underline;text-underline-offset:3px}
+.btn:focus-visible,.tab:focus-visible,.link:focus-visible,.tile:focus-visible,.pick:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:9px 11px;width:100%;min-width:0}
+label{display:flex;flex-direction:column;gap:5px;font-size:14px;color:var(--muted);font-weight:600;min-width:0}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:700;white-space:nowrap}
+.chip.bad{background:var(--bad-bg);color:var(--bad)} .chip.warn{background:var(--warn-bg);color:var(--warn)} .chip.ok{background:var(--ok-bg);color:var(--ok)} .chip.none{background:var(--none-bg);color:var(--none)}
+.dot{width:9px;height:9px;border-radius:50%;background:currentColor;flex:none;display:inline-block}
+.plate{display:inline-flex;flex-direction:column;border:2px solid #111;border-radius:5px;overflow:hidden;background:#fff;flex:none;line-height:1;vertical-align:middle}
+.plate .strip{background:var(--plate);color:#fff;font-size:7px;font-weight:700;letter-spacing:.14em;text-align:center;padding:2px 6px;font-family:var(--f-body)}
+.plate .num{font-family:var(--f-mono);font-weight:700;font-size:15px;color:#111;padding:3px 8px;letter-spacing:.05em}
+.plate.big .num{font-size:20px;padding:4px 11px}
+.sub{color:var(--muted);font-size:14px}
+.empty{color:var(--muted);padding:22px;text-align:center;border:1px dashed var(--line-strong);border-radius:10px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+/* registrar */
+.actsel{font-family:var(--f-head);font-weight:600;font-size:17px;padding:12px 14px;border-width:1.5px;max-width:520px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.tile{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;background:var(--surface);border:1.5px solid var(--line-strong);border-radius:12px;padding:14px 16px;color:var(--ink);min-height:84px}
+.tile b{font-family:var(--f-head);font-size:16px;font-weight:600}
+.tile small{color:var(--muted);font-size:13.5px;line-height:1.35}
+.tile:hover{border-color:var(--brand)}
+.tile[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);box-shadow:inset 0 0 0 1px var(--brand)}
+.tile[aria-pressed="true"] b{color:var(--brand)}
+.tile.pend{border-style:dashed}
+.picks{display:flex;flex-wrap:wrap;gap:8px}
+.pick{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 14px 6px 8px;font-family:var(--f-head);font-weight:600;font-size:14px}
+.pick[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
+.pick .box{width:18px;height:18px;border-radius:5px;border:2px solid currentColor;display:inline-grid;place-items:center;font-size:12px;line-height:1}
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.form .full{grid-column:1/-1}
+@media (max-width:560px){.form{grid-template-columns:1fr}}
+.foot{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.foot .grow{flex:1}
+.hint{font-size:13.5px;color:var(--muted);font-weight:400}
+/* linhas (sem caixinhas) */
+.lines{display:flex;flex-direction:column}
+.line{display:grid;grid-template-columns:88px 170px minmax(0,1fr) auto;gap:4px 16px;align-items:baseline;padding:10px 0;border-top:1px solid var(--line)}
+.line:first-child{border-top:0}
+.line .d{font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px;white-space:nowrap}
+.line .k{font-family:var(--f-head);font-weight:600;font-size:14.5px}
+.line .x{min-width:0;overflow-wrap:anywhere}
+.line .x small{display:block;color:var(--muted);font-size:13.5px}
+.line .a{display:flex;gap:12px;align-items:center;justify-self:end}
+@media (max-width:640px){.line{grid-template-columns:1fr auto}.line .d{grid-column:1}.line .k{grid-column:1}.line .x{grid-column:1/-1}.line .a{grid-column:2;grid-row:1}}
+.line.st-bad .k{color:var(--bad)} .line.st-warn .k{color:var(--warn)}
+/* carros */
+.carhead{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px}
+.carhead .who{flex:1;min-width:200px}
+.carhead .who h2{font-size:24px}
+.carhead .who p{margin:2px 0 0;font-size:15px}
+.carhead .who p b{font-weight:700}
+.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.strip > div{padding:12px 14px 12px 0;display:flex;flex-direction:column;gap:2px;min-width:0}
+.strip > div + div{padding-left:14px;border-left:1px solid var(--line)}
+.strip .big{font-family:var(--f-head);font-weight:700;font-size:17px;display:flex;align-items:center;gap:7px;line-height:1.2}
+.strip .s-ok .big{color:var(--ok)} .strip .s-warn .big{color:var(--warn)} .strip .s-bad .big{color:var(--bad)} .strip .s-none .big{color:var(--none)}
+.strip small{color:var(--muted);font-size:13px;line-height:1.3}
+@media (max-width:640px){.strip{grid-template-columns:1fr 1fr}.strip > div{padding:10px 8px 10px 0}.strip > div + div{padding-left:0;border-left:0}.strip > div:nth-child(even){padding-left:12px;border-left:1px solid var(--line)}.strip > div:nth-child(n+3){border-top:1px solid var(--line)}}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px 28px}
+.secthead{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:4px}
+.files{display:flex;flex-wrap:wrap;gap:8px 16px}
+.file{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.file a{color:var(--ink);font-weight:600;overflow-wrap:anywhere;text-decoration:underline;text-decoration-color:var(--line-strong);text-underline-offset:3px}
+.file a:hover{color:var(--brand)}
+.ext{font-family:var(--f-mono);font-size:10.5px;background:var(--brand-soft);color:var(--brand);border-radius:4px;padding:2px 5px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;font-size:15px;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+/* histórico */
+.filters{display:flex;flex-wrap:wrap;gap:12px}
+.filters label{flex:1 1 180px}
+.table-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+table.hist{border-collapse:collapse;width:100%;font-size:15px;min-width:920px}
+.hist th,.hist td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.hist th{font-family:var(--f-head);font-size:11.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:600}
+.hist tr:last-child td{border-bottom:0}
+.num{text-align:right!important;font-variant-numeric:tabular-nums;white-space:nowrap}
+.nowrap{white-space:nowrap;font-variant-numeric:tabular-nums}
+.rules{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:14px;color:var(--muted);align-items:center}
+.rules b{color:var(--ink)}
+/* carros: grade + ficha */
+.cargrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.carcard{display:flex;flex-direction:column;gap:14px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;color:var(--ink);cursor:pointer}
+.carcard:hover{border-color:var(--brand)}
+.carcard:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.carcard .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.carcard b{font-family:var(--f-head);font-size:22px;font-weight:700;line-height:1.15;display:block}
+.carcard .own{color:var(--muted);font-size:14px}
+.carcard .state{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px}
+.carcard .state.ok{color:var(--ok)} .carcard .state.warn{color:var(--warn)}
+.cardetail{display:flex;flex-direction:column;gap:18px}
+.dhead{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px}
+.dhead .who{flex:1;min-width:200px}
+.dhead h2{font-size:28px}
+.seg{display:inline-flex;background:var(--sunk);border-radius:10px;padding:4px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:none;color:var(--muted);font-family:var(--f-head);font-weight:600;font-size:14px;padding:8px 14px;border-radius:7px}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.seg button:focus-visible{outline:3px solid var(--brand);outline-offset:1px}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}
+.srow:first-child{border-top:0}
+.srow .nm2{font-family:var(--f-head);font-weight:600;font-size:16px}
+.srow .nm2 small{display:block;font-family:var(--f-body);font-weight:400;color:var(--muted);font-size:13.5px}
+.srow .val{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;text-align:right}
+.srow .val.ok{color:var(--ok)} .srow .val.warn{color:var(--warn)} .srow .val.bad{color:var(--bad)} .srow .val.none{color:var(--muted);font-weight:600}
+.backlink{align-self:flex-start}
+/* login / somente leitura */
+.authbox{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.authbox b{color:var(--ink)}
+body.ro .tab[data-tab="registrar"],body.ro [data-done],body.ro [data-editev],body.ro [data-agendar],body.ro [data-editcar],body.ro [data-adddoc],body.ro [data-rmdoc],body.ro [data-newpend],body.ro [data-newpendcar],body.ro #btnRegras,body.ro .calk{display:none!important}
+/* sanfonas */
+.fold{background:var(--surface);border:1px solid var(--line);border-radius:12px;min-width:0}
+.fold>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;padding:14px 18px;border-radius:12px}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary:hover{background:var(--sunk)}
+.fold>summary:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.fold>summary .chev{margin-left:auto;width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);flex:none;transition:transform .15s}
+.fold[open]>summary .chev{transform:rotate(-135deg)}
+.fold>.body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:18px;border-top:1px solid var(--line)}
+.fold .nm{display:flex;flex-direction:column;min-width:0}
+.fold .nm b{font-family:var(--f-head);font-size:18px;font-weight:700;line-height:1.2}
+.fold .nm span{font-size:13.5px;color:var(--muted)}
+.sumchips{display:flex;flex-wrap:wrap;gap:6px}
+.dots{display:flex;gap:4px;align-items:center}
+.dots i{width:10px;height:10px;border-radius:50%;display:block}
+.dots i.ok{background:var(--ok)} .dots i.warn{background:var(--warn)} .dots i.bad{background:var(--bad)} .dots i.none{background:var(--line-strong)}
+.mini>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-family:var(--f-head);font-size:13px;font-weight:600;color:var(--brand)}
+.mini>summary::-webkit-details-marker{display:none}
+.mini>summary::before{content:"+";display:inline-grid;place-items:center;width:18px;height:18px;border:1.5px solid currentColor;border-radius:5px;font-size:13px;line-height:1}
+.mini[open]>summary::before{content:"–"}
+.mini>.inner2{padding-top:10px}
+.stack{display:flex;flex-direction:column;gap:10px}
+@media (max-width:560px){.fold>summary .dots{display:none}}
+/* situação */
+.hero{display:flex;flex-wrap:wrap;gap:16px 40px;align-items:flex-end}
+.hero .h{display:flex;flex-direction:column;gap:2px}
+.hero .h b{font-family:var(--f-head);font-size:44px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.hero .h span{color:var(--muted);font-size:14px}
+.hero .h.ok b{color:var(--ok)} .hero .h.bad b{color:var(--bad)} .hero .h.warn b{color:var(--warn)}
+.bars{display:flex;flex-direction:column;gap:12px}
+.bar{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:12px;align-items:center}
+.bar .n{font-family:var(--f-head);font-weight:600;font-size:15px}
+.bar .track{display:flex;gap:2px;height:26px;background:var(--sunk);border-radius:4px;overflow:hidden}
+.bar .seg{height:100%;min-width:0;border-radius:0}
+.bar .seg:first-child{border-radius:4px 0 0 4px} .bar .seg:last-child{border-radius:0 4px 4px 0} .bar .seg:only-child{border-radius:4px}
+.seg.ok,.sw.ok{background:var(--ok)} .seg.warn,.sw.warn{background:var(--warn)} .seg.bad,.sw.bad{background:var(--bad)} .seg.none,.sw.none{background:var(--line-strong)} .seg.ink{background:var(--ink)}
+.bar .v{font-size:14px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.bar .v b{color:var(--ink)}
+.legend-row{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--muted)}
+.legend-row span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+@media (max-width:560px){.bar{grid-template-columns:1fr auto}.bar .n{grid-column:1}.bar .v{grid-column:2;grid-row:1}.bar .track{grid-column:1/-1}}
+/* diálogos */
+dialog{border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink);padding:0;width:min(600px,calc(100vw - 24px));max-height:calc(100dvh - 24px)}
+dialog::backdrop{background:rgba(20,10,11,.55)}
+.dlg{padding:22px;display:flex;flex-direction:column;gap:16px}
+.check span{display:flex;align-items:center;gap:8px;color:var(--ink);font-weight:600;padding-top:26px}.check input{width:18px;height:18px}
+@media (max-width:560px){.check span{padding-top:0}}
+.when{font-family:var(--f-head);font-weight:600;font-size:13px;color:var(--brand)}
+.ask{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:10px 12px;font-weight:700;font-size:15px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:700;font-size:15px;z-index:10;max-width:calc(100vw - 32px)}
+a{color:var(--brand)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<header class="head gut">
+  <div class="inner">
+    <div class="brandrow">
+      <span class="mark" aria-label="CEAC">CEAC</span>
+      <div class="t"><span class="eyebrow">Centro de Atividades Culturais</span><b>Frota · gestão dos carros</b></div>
+      <div class="stats" id="stats"></div>
+      <div class="authbox" id="authbox"></div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="pendencias" aria-selected="true" type="button">Pendências<span class="n" id="pendN" hidden></span></button>
+      <button class="tab" role="tab" data-tab="registrar" aria-selected="false" type="button">Registrar</button>
+      <button class="tab" role="tab" data-tab="carros" aria-selected="false" type="button">Carros</button>
+      <button class="tab" role="tab" data-tab="pessoas" aria-selected="false" type="button">Por pessoa</button>
+      <button class="tab" role="tab" data-tab="historico" aria-selected="false" type="button">Histórico</button>
+      <button class="tab" role="tab" data-tab="documentos" aria-selected="false" type="button">Documentos</button>
+      <button class="tab" role="tab" data-tab="situacao" aria-selected="false" type="button">Situação</button>
+    </nav>
+  </div>
+</header>
+
+<main class="gut"><div class="inner">
+
+  <!-- REGISTRAR -->
+  <section id="tab-registrar" hidden>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="panel" style="gap:10px">
+        <label for="regActSel" style="color:var(--ink)"><span class="eyebrow">Novo registro</span><span style="font-family:var(--f-head);font-size:20px;font-weight:700">Selecione a atividade que você deseja cadastrar.</span></label>
+        <select id="regActSel" class="actsel"></select>
+        <span class="hint" id="regActHint"></span>
+      </div>
+      <form class="panel" id="regForm" hidden>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span class="label">Quais carros?</span>
+          <div class="picks" id="regCars"></div>
+        </div>
+        <div class="form">
+          <label data-r="cat">Tipo de pendência<select id="regCat"></select></label>
+          <label><span id="regDateLbl">Quando foi feito?</span><input type="date" id="regData" required></label>
+          <label class="full">Descrição<textarea id="regDesc" rows="2"></textarea></label>
+          <label data-r="sched">Responsável<select id="regAtr"></select></label>
+          <label data-r="sched">Marcado para<input type="date" id="regAg"></label>
+          <label data-r="sched">Horário (opcional)<input type="time" id="regHora"></label>
+          <label data-r="sched" class="check"><span><input type="checkbox" id="regCal" checked> Mandar pra agenda do responsável</span></label>
+          <label data-r="who">Quem fez<input id="regResp" list="pessoas" placeholder="Nome"></label>
+          <label>Local / oficina<input id="regLocal" list="locais" placeholder="ex.: Sampaio"></label>
+          <label data-r="km">Km no painel<input type="number" id="regKm" inputmode="numeric" min="0"></label>
+          <label data-r="pay">Valor (R$)<input type="number" id="regValor" inputmode="decimal" step="0.01" min="0"></label>
+          <label data-r="pay">Pagamento<select id="regPago"><option value="">—</option><option value="sim">Pago</option><option value="nao">Não pago</option></select></label>
+          <div class="full" data-r="anexo" style="display:flex;flex-direction:column;gap:6px">
+            <span class="label">Nota fiscal, orçamento ou foto</span>
+            <div class="files" id="regFiles"></div>
+            <input type="file" id="regFileInput" multiple accept="image/*,application/pdf">
+          </div>
+        </div>
+        <div class="foot"><span class="hint grow" id="regHint"></span><button class="btn brand" type="submit" id="regSave">Salvar</button></div>
+      </form>
+      <div id="recentWrap"></div>
+    </div>
+  </section>
+
+  <!-- CARROS -->
+  <section id="tab-carros" hidden>
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div id="carList"></div>
+    </div>
+  </section>
+
+  <section id="tab-pessoas" hidden><div style="display:flex;flex-direction:column;gap:18px"><p class="sub" style="margin:0" id="pessoasNote"></p><div class="two" id="porPessoa"></div><div id="semResp"></div></div></section>
+
+  <section id="tab-pendencias"><div id="pend" style="display:flex;flex-direction:column;gap:18px"></div></section>
+
+  <section id="tab-historico" hidden>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="filters">
+        <label>Carro<select id="fCar"></select></label>
+        <label>Tipo<select id="fCat"></select></label>
+        <label>Pagamento<select id="fPago"><option value="">Todos</option><option value="nao">Não pago</option><option value="sim">Pago</option></select></label>
+      </div>
+      <div class="table-wrap"><table class="hist">
+        <thead><tr><th>Data</th><th>Carro</th><th>Tipo</th><th>O que foi feito</th><th>Quem · onde</th><th class="num">Valor</th><th>Pago</th><th>Nota</th><th></th></tr></thead>
+        <tbody id="histBody"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section id="tab-situacao" hidden>
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div class="panel"><div class="hero" id="hero"></div></div>
+      <div class="panel">
+        <div class="secthead"><h3>Rotina e documentos por carro</h3></div>
+        <div class="legend-row"><span><i class="sw ok"></i>Em dia</span><span><i class="sw warn"></i>Atenção</span><span><i class="sw bad"></i>Atrasado / vencido</span><span><i class="sw none"></i>Sem dado</span></div>
+        <div class="bars" id="barsStatus"></div>
+        <p class="hint" style="margin:0">Cada carro tem 7 itens: lavagem, calibragem, água e óleo, troca de óleo, licenciamento, seguro e IPVA.</p>
+      </div>
+      <div class="panel">
+        <div class="secthead"><h3>Pendências abertas por carro</h3></div>
+        <div class="bars" id="barsPend"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-documentos" hidden><div id="docs" style="display:flex;flex-direction:column;gap:18px"></div></section>
+</div></main>
+
+<!-- editar / concluir registro -->
+<dialog id="dlgEvento">
+  <form class="dlg" id="formEvento" method="dialog">
+    <h2 id="evTitle">Editar registro</h2>
+    <div class="ask" id="evAsk" hidden>Quando foi feito? Preencha a data antes de salvar.</div>
+    <div class="form">
+      <label>Carro<select id="evCarro" required></select></label>
+      <label>Tipo<select id="evCat" required></select></label>
+      <label>Situação<select id="evStatus"><option value="Finalizado">Feito</option><option value="Pendente">Pendente (a fazer)</option></select></label>
+      <label><span id="evDataLbl">Feito em</span><input type="date" id="evData" required></label>
+      <label class="full">Descrição<textarea id="evDesc" rows="2"></textarea></label>
+      <label data-e="pend">Responsável<select id="evAtr"></select></label>
+      <label data-e="pend">Marcado para<input type="date" id="evAg"></label>
+      <label data-e="pend">Horário (opcional)<input type="time" id="evHora"></label>
+      <label data-e="pend" class="check"><span><input type="checkbox" id="evCal"> Mandar pra agenda do responsável</span></label>
+      <label data-e="done">Quem fez<input id="evResp" list="pessoas"></label>
+      <label>Local / oficina<input id="evLocal" list="locais"></label>
+      <label data-e="done">Km no painel<input type="number" id="evKm" inputmode="numeric" min="0"></label>
+      <label data-e="done">Valor (R$)<input type="number" id="evValor" inputmode="decimal" step="0.01" min="0"></label>
+      <label data-e="done">Pagamento<select id="evPago"><option value="">—</option><option value="sim">Pago</option><option value="nao">Não pago</option></select></label>
+      <div class="full" data-e="anexo" style="display:flex;flex-direction:column;gap:6px">
+        <span class="label">Nota fiscal, orçamento ou foto</span>
+        <div class="files" id="evFiles"></div>
+        <input type="file" id="evFileInput" multiple accept="image/*,application/pdf">
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn" type="button" id="evDel" hidden>Apagar</button>
+      <span class="grow"></span>
+      <button class="btn" type="button" id="evCancel">Cancelar</button>
+      <button class="btn brand" type="submit" id="evSave">Salvar</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlgCarro">
+  <form class="dlg" id="formCarro" method="dialog">
+    <h2 id="carTitle">Dados do carro</h2>
+    <div class="form">
+      <label>Modelo<input id="cModelo" required></label>
+      <label>Placa<input id="cPlaca" required maxlength="8" style="text-transform:uppercase"></label>
+      <label>Proprietário<input id="cProp"></label>
+      <label>Renavam<input id="cRenavam" inputmode="numeric"></label>
+      <label>Ano fab./modelo<input id="cAno" placeholder="2022/2023"></label>
+      <label>Cor · combustível<input id="cCor" placeholder="Prata · Flex"></label>
+      <label class="full">Pasta no Drive (link)<input id="cDrive" type="url"></label>
+      <div class="label full">Responsáveis pela rotina</div>
+      <label>Lavagem<input id="cRespLav" list="pessoas"></label>
+      <label>Calibragem<input id="cRespCal" list="pessoas"></label>
+      <label>Água e óleo<input id="cRespAgua" list="pessoas"></label>
+      <span></span>
+      <div class="label full">Documentos</div>
+      <label>Último licenciamento pago (ano)<input type="number" id="cLicAno" min="2000" max="2100"></label>
+      <label>IPVA vence em<input type="date" id="cIpva"></label>
+      <label>Seguro vence em<input type="date" id="cSeg"></label>
+      <label>Seguradora · apólice<input id="cSegInfo"></label>
+      <div class="label full">Óleo</div>
+      <label>Próxima troca (km)<input type="number" id="cOleoKm" min="0"></label>
+      <label>Próxima troca (data)<input type="date" id="cOleoData"></label>
+      <label class="full">Observações<textarea id="cObs" rows="2"></textarea></label>
+    </div>
+    <div class="foot"><span class="grow"></span><button class="btn" type="button" id="cCancel">Cancelar</button><button class="btn brand" type="submit">Salvar</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlgRegras">
+  <form class="dlg" id="formRegras" method="dialog">
+    <h2>Regras da rotina</h2>
+    <div class="form">
+      <label>Lavar a cada (dias)<input type="number" id="rLav" min="1" required></label>
+      <label>Calibrar a cada (dias)<input type="number" id="rCal" min="1" required></label>
+      <label>Água e óleo a cada (dias)<input type="number" id="rAgua" min="1" required></label>
+      <label>Trocar óleo a cada (km)<input type="number" id="rOleo" min="1000" step="500" required></label>
+      <label class="full">Avisar quando faltarem (dias)<input type="number" id="rAviso" min="0" required></label>
+    </div>
+    <div class="foot"><span class="grow"></span><button class="btn" type="button" id="rCancel">Cancelar</button><button class="btn brand" type="submit">Salvar</button></div>
+  </form>
+</dialog>
+
+<datalist id="pessoas"></datalist>
+<datalist id="locais"></datalist>
+<input type="file" id="docInput" accept="image/*,application/pdf" hidden>
+<div class="toast" id="toast" hidden></div>
+
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getFirestore,collection,doc,onSnapshot as fsSnap,setDoc,updateDoc,deleteDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+const fbApp=initializeApp({apiKey:"AIzaSyBU5oSbfioSnDQgkvJoq5pE9NHQRRp8T-g",authDomain:"frota-ceac.firebaseapp.com",projectId:"frota-ceac",storageBucket:"frota-ceac.firebasestorage.app",messagingSenderId:"1077001594650",appId:"1:1077001594650:web:b5c0931935270c89856ea3"});
+const fsdb=getFirestore(fbApp),auth=getAuth(fbApp);
+const SCOPES=["https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/calendar.events"];
+/* adaptador: mesma interface que o painel usava */
+const wrapDoc=r=>({get id(){return r.id},set:d=>setDoc(r,d),update:d=>updateDoc(r,d),delete:()=>deleteDoc(r),onSnapshot:(cb,err)=>fsSnap(r,s=>cb({id:s.id,exists:s.exists(),data:()=>s.data()}),err)});
+const FDB={doc:p=>wrapDoc(doc(fsdb,p)),collection:p=>{const c=collection(fsdb,p);return{doc:id=>wrapDoc(id?doc(c,id):doc(c)),onSnapshot:(cb,err)=>fsSnap(c,s=>cb({docs:s.docs.map(d=>({id:d.id,exists:true,data:()=>d.data()}))}),err)}}};
+let fbUser=null,isEditor=false,gTok=null,gTokExp=0;
+try{const t=JSON.parse(sessionStorage.getItem("frota-gtok")||"null");if(t&&t.exp>Date.now()){gTok=t.tok;gTokExp=t.exp}}catch{}
+function googleProvider(){const p=new GoogleAuthProvider();SCOPES.forEach(s=>p.addScope(s));if(fbUser?.email)p.setCustomParameters({login_hint:fbUser.email});return p}
+function keepToken(r){const c=GoogleAuthProvider.credentialFromResult(r);if(c?.accessToken){gTok=c.accessToken;gTokExp=Date.now()+50*60e3;try{sessionStorage.setItem("frota-gtok",JSON.stringify({tok:gTok,exp:gTokExp}))}catch{}}}
+async function signIn(){try{const r=await signInWithPopup(auth,googleProvider());keepToken(r)}catch(e){if(e?.code!=="auth/popup-closed-by-user"&&e?.code!=="auth/cancelled-popup-request")toast("Não deu pra entrar. Tente de novo.")}}
+async function googleToken(){if(gTok&&gTokExp>Date.now())return gTok;const r=await signInWithPopup(auth,googleProvider());keepToken(r);if(!gTok)throw{code:"no-token"};return gTok}
+async function gapi(url,opts={}){const tok=await googleToken();const r=await fetch(url,{...opts,headers:{...(opts.headers||{}),Authorization:"Bearer "+tok}});if(r.status===401){gTok=null;throw{code:"google-auth"}}if(!r.ok)throw{code:"google-"+r.status,message:await r.text()};return r.status===204?null:r.json()}
+/* anexos no Google Drive */
+let driveFolder=null;
+async function ensureFolder(){if(driveFolder)return driveFolder;
+  const q=encodeURIComponent("name='Frota CEAC - anexos' and mimeType='application/vnd.google-apps.folder' and trashed=false");
+  const l=await gapi(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`);
+  driveFolder=l.files?.[0]?.id||(await gapi("https://www.googleapis.com/drive/v3/files?fields=id",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:"Frota CEAC - anexos",mimeType:"application/vnd.google-apps.folder"})})).id;
+  return driveFolder}
+const DRIVE={async upload(file){
+  const folder=await ensureFolder();
+  const fd=new FormData();fd.append("metadata",new Blob([JSON.stringify({name:file.name,parents:[folder]})],{type:"application/json"}));fd.append("file",file);
+  const f=await gapi("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink,mimeType",{method:"POST",body:fd});
+  for(const em of people.map(p=>p.email).filter(x=>x&&x!==fbUser?.email)){try{await gapi(`https://www.googleapis.com/drive/v3/files/${f.id}/permissions?sendNotificationEmail=false`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({role:"writer",type:"user",emailAddress:em})})}catch{}}
+  return{id:f.id,url:f.webViewLink,contentType:f.mimeType}}};
+/* agenda do Google */
+const CAL={async callTool(_s,_t,i){
+  const ev={summary:i.summary,description:i.description,attendees:i.attendees,reminders:{useDefault:true}};
+  if(i.allDay){ev.start={date:i.startTime.slice(0,10)};ev.end={date:i.endTime.slice(0,10)}}else{ev.start={dateTime:i.startTime,timeZone:"America/Sao_Paulo"};ev.end={dateTime:i.endTime,timeZone:"America/Sao_Paulo"}}
+  const r=await gapi("https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(ev)});
+  return{payload:r}}};
+
+const CATS=["Lavagem","Calibragem","Água e óleo","Troca de óleo","Revisão","Mecânica","Pneus","Estética","Documentos","Seguro","IPVA","Licenciamento","Abastecimento","Outro"];
+const DEFAULT_RULES={lavagem:30,calibragem:15,agua:15,oleoKm:10000,aviso:3};
+const ROUTINE_CATS=["Lavagem","Calibragem","Água e óleo","Troca de óleo"];
+const ROUTINE=[["Lavagem","lavagem","respLavagem"],["Calibragem","calibragem","respCalibragem"],["Água e óleo","agua","respAgua"]];
+let db=null,assets=null,mcp=null,people=[{nome:"Tiago",email:""},{nome:"Davi",email:""}],cars=[],events=[],rules={...DEFAULT_RULES},loaded=false;
+let regAct=null,regSel=new Set(),regFiles=[],editingEvent=null,evNewFiles=[],editingCar=null,docTarget=null;
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function isoToday(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function parse(iso){const[y,m,d]=iso.split("-").map(Number);return new Date(y,m-1,d)}
+function addDays(iso,n){const d=parse(iso);d.setDate(d.getDate()+n);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function daysBetween(a,b){return Math.round((parse(b)-parse(a))/86400000)}
+function br(iso){if(!iso)return"—";const[y,m,d]=iso.split("-");return d+"/"+m+"/"+y}
+function brs(iso){if(!iso)return"—";const[y,m,d]=iso.split("-");return d+"/"+m}
+const nf=new Intl.NumberFormat("pt-BR"),money=new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
+function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,3000)}
+const chip=(st,t)=>`<span class="chip ${st}"><span class="dot"></span>${esc(t)}</span>`;
+const plate=(p,big)=>`<span class="plate${big?" big":""}" aria-label="Placa ${esc(p)}"><span class="strip">BRASIL</span><span class="num">${esc(p)}</span></span>`;
+const blobUrl=a=>a?.url||(a?.id?`https://drive.google.com/file/d/${a.id}/view`:"");
+const fileHtml=(a,rm)=>{const ext=(a.nome||"").split(".").pop().slice(0,4).toUpperCase();return `<span class="file"><span class="ext">${esc(ext||"ARQ")}</span><a href="${esc(blobUrl(a))}" target="_blank" rel="noopener">${esc(a.nome||"arquivo")}</a>${rm?`<button class="link" type="button" ${rm}>remover</button>`:""}</span>`};
+const carOf=p=>cars.find(c=>c.placa===p);
+const carName=p=>p==="GERAL"?"Geral":carOf(p)?.modelo||p;
+const plural=(n,s,p)=>n===1?s:p;
+
+/* ---------- regras e status ---------- */
+const eventsOf=p=>events.filter(e=>e.placa===p).sort((a,b)=>(b.data||"").localeCompare(a.data||""));
+const doneOf=p=>eventsOf(p).filter(e=>e.status!=="Pendente");
+const pendingOf=p=>events.filter(e=>e.placa===p&&e.status==="Pendente").sort((a,b)=>(a.data||"").localeCompare(b.data||""));
+const lastDone=(p,cat)=>doneOf(p).find(e=>e.categoria===cat&&e.data);
+function kmAtual(p){let k=0;for(const e of events)if(e.placa===p&&+e.km>k)k=+e.km;return k||null}
+function routine(p,cat,key){
+  const e=lastDone(p,cat),every=+rules[key]||30;
+  if(!e)return{st:"none",big:"Sem registro",small:`a cada ${every} dias`};
+  const due=addDays(e.data,every),left=daysBetween(isoToday(),due);
+  const st=left<0?"bad":left<=(+rules.aviso||0)?"warn":"ok";
+  const big=left<0?`Atrasada ${-left} ${plural(-left,"dia","dias")}`:left===0?"Vence hoje":`Faltam ${left} ${plural(left,"dia","dias")}`;
+  return{st,big,small:`última ${brs(e.data)}${e.responsavel?" · "+e.responsavel:""}`,left,e};
+}
+function oil(c){
+  const km=kmAtual(c.placa);
+  if(c.oleoKm&&km){const left=c.oleoKm-km;return{st:left<=0?"bad":left<=1000?"warn":"ok",big:left<=0?`Passou ${nf.format(-left)} km`:`Faltam ${nf.format(left)} km`,small:`troca em ${nf.format(c.oleoKm)} km`,km}}
+  if(c.oleoKm)return{st:"ok",big:`Em ${nf.format(c.oleoKm)} km`,small:"km atual não informado",km};
+  if(c.oleoData){const d=daysBetween(isoToday(),c.oleoData);return{st:d<0?"bad":d<=30?"warn":"ok",big:d<0?`Atrasada ${-d} dias`:`Faltam ${d} dias`,small:"troca em "+br(c.oleoData),km}}
+  return{st:"none",big:"Sem previsão",small:`a cada ${nf.format(rules.oleoKm)} km`,km};
+}
+function due(iso,what){
+  if(!iso)return{st:"none",big:"Sem data",small:`cadastrar ${what}`};
+  const d=daysBetween(isoToday(),iso);
+  if(d<0)return{st:"bad",big:"Vencido",small:"desde "+br(iso)};
+  return{st:d<=30?"warn":"ok",big:d<=30?`Vence em ${d} ${plural(d,"dia","dias")}`:"Em dia",small:"até "+br(iso)};
+}
+function lic(c){const y=new Date().getFullYear();if(!c.licAno)return{st:"none",big:"Sem dado",small:"cadastrar ano pago"};return +c.licAno>=y?{st:"ok",big:`${c.licAno} pago`,small:"exercício em dia"}:{st:"bad",big:`Último: ${c.licAno}`,small:`falta pagar ${y}`}}
+function statusList(c){return[...ROUTINE.map(([cat,key])=>[cat,routine(c.placa,cat,key)]),["Troca de óleo",oil(c)],["Licenciamento",lic(c)],["Seguro",due(c.seguro,"vencimento")],["IPVA",due(c.ipva,"vencimento")]]}
+function attention(c){return statusList(c).filter(([,s])=>s.st==="bad"||s.st==="warn"||s.st==="none")}
+
+/* ---------- agenda ---------- */
+const emailOf=n=>people.find(p=>p.nome===n)?.email||"";
+const ymd=iso=>iso.replace(/-/g,"");
+function calTitle(e){return `Frota CEAC · ${e.categoria} · ${carName(e.placa)}`}
+function calDetails(e){return [e.descricao,e.local&&"Local: "+e.local,"Responsável: "+(e.atribuido||"—"),"Registrado no painel Frota CEAC."].filter(Boolean).join("\n")}
+function calLink(e){if(!e.agendado)return"";const end=e.hora?null:addDays(e.agendado,1);
+  const dates=e.hora?`${ymd(e.agendado)}T${e.hora.replace(":","")}00/${ymd(e.agendado)}T${String((+e.hora.slice(0,2)+1)%24).padStart(2,"0")}${e.hora.slice(3)}00`:`${ymd(e.agendado)}/${ymd(end)}`;
+  const q=new URLSearchParams({action:"TEMPLATE",text:calTitle(e),dates,details:calDetails(e)});const em=emailOf(e.atribuido);if(em)q.set("add",em);
+  return "https://calendar.google.com/calendar/render?"+q.toString()}
+async function sendCalendar(e){
+  if(!mcp)return{ok:false,why:"no-mcp"};
+  const em=emailOf(e.atribuido);if(!em||!e.agendado)return{ok:false,why:"no-data"};
+  let start,end,allDay=false;
+  if(e.hora){start=`${e.agendado}T${e.hora}:00`;const h=(+e.hora.slice(0,2)+1);end=h>23?`${addDays(e.agendado,1)}T00:${e.hora.slice(3)}:00`:`${e.agendado}T${String(h).padStart(2,"0")}:${e.hora.slice(3)}:00`}
+  else{allDay=true;start=`${e.agendado}T00:00:00`;end=`${addDays(e.agendado,1)}T00:00:00`}
+  try{const r=await mcp.callTool("Google Calendar","create_event",{summary:calTitle(e),description:calDetails(e),startTime:start,endTime:end,allDay,attendees:[{email:em}],notificationLevel:"ALL"});
+    const pl=r?.payload||{};return{ok:true,id:pl.id||pl.eventId||null,link:pl.htmlLink||pl.url||null}}
+  catch(err){return{ok:false,why:err?.code||"erro"}}
+}
+function calMsg(why){return why==="google-auth"||why==="no-token"?"A agenda pediu pra você confirmar sua conta Google. Tente de novo.":why==="google-403"?"O Google não liberou a agenda pra esta conta. Use o link “pôr na agenda”.":why==="no-mcp"?"Entre com sua conta Google pra mandar pra agenda.":why==="no-data"?"Pra mandar pra agenda, escolha o responsável e a data marcada.":"Não deu pra criar o evento na agenda agora. Use o link “pôr na agenda”."}
+function personOpts(sel){return `<option value="">— sem responsável —</option>`+people.map(p=>`<option value="${esc(p.nome)}"${p.nome===sel?" selected":""}>${esc(p.nome)}</option>`).join("")}
+
+/* ---------- sanfonas ---------- */
+let OPEN=new Set();try{OPEN=new Set(JSON.parse(localStorage.getItem("frota-open")||"[]"))}catch{}
+document.addEventListener("toggle",e=>{const d=e.target;if(!d.dataset||!d.dataset.fold)return;d.open?OPEN.add(d.dataset.fold):OPEN.delete(d.dataset.fold);try{localStorage.setItem("frota-open",JSON.stringify([...OPEN]))}catch{}},true);
+const fold=(id,sum,body)=>`<details class="fold" data-fold="${esc(id)}"${OPEN.has(id)?" open":""}><summary>${sum}<span class="chev" aria-hidden="true"></span></summary><div class="body">${body}</div></details>`;
+const mini=(id,label,body)=>`<details class="mini" data-fold="${esc(id)}"${OPEN.has(id)?" open":""}><summary>${label}</summary><div class="inner2">${body}</div></details>`;
+const dotsHtml=c=>`<span class="dots" aria-hidden="true">${statusList(c).map(([l,s])=>`<i class="${s.st}" title="${esc(l)}: ${esc(s.big)}"></i>`).join("")}</span>`;
+function carCounts(c){const st=statusList(c);return{bad:st.filter(([,s])=>s.st==="bad").length,warn:st.filter(([,s])=>s.st==="warn").length,none:st.filter(([,s])=>s.st==="none").length,pend:pendingOf(c.placa).length}}
+function countChips(k){return k.bad||k.pend?chip("warn","precisa de atenção"):chip("ok","em dia")}
+const carSum=(c,extra)=>`${plate(c.placa)}<span class="nm"><b>${esc(c.modelo)}</b><span>Proprietário: ${esc(c.proprietario||"—")}</span></span>${extra||""}`;
+
+/* ---------- linhas ---------- */
+function lineDone(e,{withCar}={}){
+  const det=[e.descricao,[e.responsavel,e.local].filter(Boolean).join(" · "),e.valor&&money.format(e.valor)].filter(Boolean);
+  return `<div class="line"><span class="d">${br(e.data)}</span><span class="k">${esc(withCar?carName(e.placa)+" · "+e.categoria:e.categoria)}</span>
+    <span class="x">${esc(det[0]||"—")}${det.length>1?`<small>${esc(det.slice(1).join(" · "))}</small>`:""}${(e.anexos||[]).length?`<small>${(e.anexos||[]).map(a=>`<a href="${esc(blobUrl(a))}" target="_blank" rel="noopener">${esc(a.nome)}</a>`).join(" · ")}</small>`:""}</span>
+    <span class="a">${e.pago==="nao"?chip("bad","Não pago"):e.pago==="sim"?chip("ok","Pago"):""}<button class="link" type="button" data-editev="${esc(e._id)}">editar</button></span></div>`;
+}
+function linePend(e,{withCar}={}){
+  const late=e.agendado&&daysBetween(isoToday(),e.agendado)<0;
+  const when=e.agendado?`<span class="when">${late?"era pra ":""}${br(e.agendado)}${e.hora?" "+e.hora:""}</span>`:"";
+  return `<div class="line st-${late?"bad":"warn"}"><span class="d">${e.agendado?when:"desde "+brs(e.data)}</span><span class="k">${esc(withCar?carName(e.placa)+" · "+e.categoria:e.categoria)}</span>
+    <span class="x">${esc(e.descricao||"—")}<small>${esc([e.atribuido?"Responsável: "+e.atribuido:"Sem responsável",e.local].filter(Boolean).join(" · "))}${e.agendado?` · ${e.agendaEnviada?"na agenda ✓":`<a class="calk" href="${esc(calLink(e))}" target="_blank" rel="noopener">pôr na agenda</a>`}`:""}</small></span>
+    <span class="a"><button class="btn small brand" type="button" data-done="${esc(e._id)}">Feito</button><button class="link" type="button" data-editev="${esc(e._id)}">editar</button></span></div>`;
+}
+function lineStatus(label,s,c){
+  return `<div class="line st-${s.st}"><span class="d">${s.st==="bad"?"atrasado":s.st==="warn"?"atenção":"sem dado"}</span><span class="k">${esc(label)}</span><span class="x">${esc(s.big)}<small>${esc(s.small)}</small></span>
+    <span class="a">${["Licenciamento","Seguro","IPVA","Troca de óleo"].includes(label)&&s.st==="none"?`<button class="link" type="button" data-editcar="${esc(c.placa)}">cadastrar</button>`:""}${ROUTINE_CATS.includes(label)&&!pendingOf(c.placa).some(e=>e.categoria===label)?`<button class="btn small" type="button" data-agendar="${esc(c.placa)}|${esc(label)}">Agendar</button>`:""}</span></div>`;
+}
+const stripHtml=c=>`<div class="strip">${statusList(c).map(([l,s])=>`<div class="s-${s.st}"><span class="label">${esc(l)}</span><span class="big"><span class="dot"></span>${esc(s.big)}</span><small>${esc(s.small)}</small></div>`).join("")}</div>`;
+
+/* ---------- registrar ---------- */
+const ACTS=[
+  {k:"Lavagem",sub:()=>`a cada ${rules.lavagem} dias`},
+  {k:"Calibragem",t:"Calibrar pneus",sub:()=>`a cada ${rules.calibragem} dias · pressão na etiqueta da porta`},
+  {k:"Água e óleo",t:"Água e óleo",sub:()=>`radiador, limpador do para-brisa e nível do óleo · a cada ${rules.agua} dias`},
+  {k:"Troca de óleo",sub:()=>`a cada ${nf.format(rules.oleoKm)} km · no Sampaio · informe o km`},
+  {k:"Revisão",sub:()=>"concessionária ou fora: anote onde"},
+  {k:"Mecânica",t:"Mecânica",sub:()=>"conserto e peças · no Sampaio"},
+  {k:"Pneus",sub:()=>"troca, conserto, alinhamento"},
+  {k:"Estética",t:"Martelinho / funilaria",sub:()=>"ralado, pintura, polimento · não é no Sampaio"},
+  {k:"Documentos",t:"Documento ou taxa",sub:()=>"licenciamento, IPVA, seguro, multa"},
+  {k:"Outro",sub:()=>"qualquer outra coisa"},
+  {k:"__pend",t:"Nova pendência",sub:()=>"algo que ainda precisa ser feito",pend:true},
+];
+const ACT_GROUPS=[["Rotina",["Lavagem","Calibragem","Água e óleo","Troca de óleo"]],["Serviços",["Revisão","Mecânica","Pneus","Estética","Documentos","Outro"]],["A fazer",["__pend"]]];
+function renderTiles(){const sel=$("#regActSel");
+  if(!sel.options.length)sel.innerHTML=`<option value="">Escolha uma atividade…</option>`+ACT_GROUPS.map(([g,ks])=>`<optgroup label="${g}">${ks.map(k=>{const a=ACTS.find(x=>x.k===k);return `<option value="${esc(k)}">${esc(a.t||a.k)}</option>`}).join("")}</optgroup>`).join("");
+  sel.value=regAct||"";const a=ACTS.find(x=>x.k===regAct);$("#regActHint").textContent=a?a.sub():""}
+$("#regActSel").addEventListener("change",e=>{const v=e.target.value;if(v)chooseAct(v);else{regAct=null;$("#regForm").hidden=true;renderTiles()}});
+function renderRegCars(){
+  const pend=regAct==="__pend";
+  const opts=[...cars.map(c=>({v:c.placa,t:c.modelo})),...(pend?[{v:"GERAL",t:"Geral (todos)"}]:[])];
+  $("#regCars").innerHTML=opts.map(o=>`<button class="pick" type="button" data-pick="${esc(o.v)}" aria-pressed="${regSel.has(o.v)}"><span class="box">${regSel.has(o.v)?"✓":""}</span>${esc(o.t)}</button>`).join("")+(!pend&&cars.length>1?`<button class="link" type="button" data-pickall>${regSel.size===cars.length?"limpar":"todos"}</button>`:"");
+  const one=regSel.size<=1;document.querySelector('[data-r="km"]').hidden=pend||!one;
+  $("#regHint").textContent=regSel.size>1?`Vai criar ${regSel.size} registros, um por carro.`:"";
+}
+function renderRegFiles(){$("#regFiles").innerHTML=regFiles.map((f,i)=>`<span class="file"><span class="ext">NOVO</span><span>${esc(f.name)}</span><button class="link" type="button" data-rmreg="${i}">remover</button></span>`).join("")}
+function chooseAct(k){
+  regAct=k;const a=ACTS.find(x=>x.k===k),pend=k==="__pend";
+  if(pend)[...regSel].forEach(()=>{});else regSel.delete("GERAL");
+  $("#regForm").hidden=false;
+  document.querySelector('[data-r="cat"]').hidden=!pend;
+  document.querySelectorAll('[data-r="pay"]').forEach(x=>x.hidden=pend);
+  document.querySelectorAll('[data-r="sched"]').forEach(x=>x.hidden=!pend);document.querySelector('[data-r="who"]').hidden=pend;
+  $("#regAtr").innerHTML=personOpts("");
+  document.querySelector('[data-r="anexo"]').hidden=!assets;
+  $("#regDateLbl").textContent=pend?"Aberta em":"Quando foi feito?";
+  $("#regData").value=pend?isoToday():"";
+  $("#regDesc").placeholder=pend?"O que precisa ser feito":"Detalhes (opcional)";
+  const r=ROUTINE.find(x=>x[0]===k);
+  if(r&&regSel.size===1){const c=carOf([...regSel][0]);if(c?.[r[2]]&&!$("#regResp").value)$("#regResp").value=c[r[2]]}
+  renderTiles();renderRegCars();
+}
+function resetReg(){regAct=null;regSel.clear();regFiles=[];$("#regForm").reset();$("#regForm").hidden=true;renderTiles();renderRegFiles()}
+$("#regCat").innerHTML=CATS.filter(c=>c!=="Abastecimento").map(c=>`<option>${c}</option>`).join("");$("#regCat").value="Mecânica";
+$("#regFileInput").addEventListener("change",e=>{regFiles=[...regFiles,...e.target.files];e.target.value="";renderRegFiles()});
+$("#regForm").addEventListener("submit",async ev=>{
+  ev.preventDefault();if(!db)return toast("O painel ainda está conectando.");
+  if(!regSel.size)return toast("Escolha pelo menos um carro.");
+  const pend=regAct==="__pend";if(!$("#regData").value)return toast("Preencha quando foi feito.");
+  const num=v=>v===""?null:Number(v);const btn=$("#regSave");btn.disabled=true;btn.textContent=regFiles.length?"Enviando arquivos…":"Salvando…";
+  try{
+    const anexos=regFiles.length&&assets?await uploadAll(regFiles):[];
+    const now=new Date().toISOString();const cat=pend?$("#regCat").value:regAct;const km=regSel.size===1&&!pend?num($("#regKm").value):null;
+    let calFail=null;
+    for(const placa of regSel){
+      const body={placa,categoria:cat,status:pend?"Pendente":"Finalizado",data:$("#regData").value,descricao:$("#regDesc").value.trim(),
+        responsavel:pend?"":$("#regResp").value.trim(),atribuido:pend?$("#regAtr").value:"",agendado:pend?($("#regAg").value||null):null,hora:pend?($("#regHora").value||null):null,
+        local:$("#regLocal").value.trim(),km,valor:pend?null:num($("#regValor").value),pago:pend?null:($("#regPago").value||null),anexos,criadoEm:now,atualizadoEm:now};
+      const open=!pend&&ROUTINE_CATS.includes(cat)?events.find(e=>e.placa===placa&&e.categoria===cat&&e.status==="Pendente"):null;
+      if(open){body.atribuido=open.atribuido||"";body.agendado=open.agendado||null;body.agendaEnviada=!!open.agendaEnviada;if(!body.descricao)body.descricao=open.descricao||"";body.criadoEm=open.criadoEm||now}
+      if(pend&&$("#regCal").checked&&body.atribuido&&body.agendado){const r=await sendCalendar(body);if(r.ok){body.agendaEnviada=true;body.agendaId=r.id}else calFail=r.why}
+      await (open?db.doc("eventos/"+open._id):db.collection("eventos").doc()).set(body);
+      if(!pend&&cat==="Troca de óleo"&&km&&carOf(placa))await db.doc("carros/"+placa).update({oleoKm:km+(+rules.oleoKm||10000)});
+    }
+    toast(calFail?"Salvo. "+calMsg(calFail):regSel.size>1?`${regSel.size} registros salvos`:"Registro salvo");resetReg();scrollTo({top:0});
+  }catch(e){fail(e)}finally{btn.disabled=false;btn.textContent="Salvar"}
+});
+
+/* ---------- render ---------- */
+function render(){
+  const pend=events.filter(e=>e.status==="Pendente"),late=cars.flatMap(c=>statusList(c).filter(([,s])=>s.st==="bad")).length,unpaid=events.filter(e=>e.pago==="nao").length;
+  $("#stats").innerHTML=false?`<div class="stat warn"><b>${pend.length}</b><span>pendências</span></div><div class="stat bad"><b>${late}</b><span>atrasados</span></div>${unpaid?`<div class="stat"><b>${unpaid}</b><span>não pagos</span></div>`:""}`:"";
+  $("#pendN").hidden=true;
+  renderTiles();if(regAct)renderRegCars();
+  const recent=[...events].filter(e=>e.status!=="Pendente").sort((a,b)=>(b.criadoEm||"").localeCompare(a.criadoEm||"")||(b.data||"").localeCompare(a.data||"")).slice(0,6);
+  $("#recentWrap").innerHTML=fold("recent",`<span class="nm"><b>Últimos cadastros</b><span>${recent.length?"os "+recent.length+" mais recentes":loaded?"nada cadastrado ainda":"carregando…"}</span></span>`,`<div class="lines">${recent.map(e=>lineDone(e,{withCar:true})).join("")||`<div class="sub">Nada cadastrado ainda.</div>`}</div>`);
+
+
+  renderCars();
+
+  const gen=pendingOf("GERAL"),rk={bad:0,warn:1,none:2};
+  const pBody=(list,rot,c,id)=>`${list.length?`<div class="lines">${list.map(e=>linePend(e)).join("")}</div>`:`<div class="sub">Nenhum serviço pendente.</div>`}
+    ${rot.length?mini("rot-"+id,`Rotina e documentos (${rot.length})`,`<div class="lines">${rot.map(([l,s])=>lineStatus(l,s,c)).join("")}</div>`):""}`;
+  $("#pend").innerHTML=loaded?[
+    fold("pend-GERAL",`<span class="nm"><b>Geral</b><span>vale pra todos os carros</span></span>${gen.length?chip("warn","tem pendência"):chip("ok","nada")}`,pBody(gen,[],null,"GERAL")),
+    ...cars.map(c=>{const rot=attention(c).sort((a,b)=>rk[a[1].st]-rk[b[1].st]);return fold("pend-"+c.placa,carSum(c,countChips(carCounts(c))),pBody(pendingOf(c.placa),rot,c,c.placa))})
+  ].join(""):`<div class="empty">Carregando…</div>`;
+  $("#pend").style.gap="10px";
+
+  const fc=$("#fCar").value,fk=$("#fCat").value,fp=$("#fPago").value;
+  $("#fCar").innerHTML=`<option value="">Todos</option>`+cars.map(c=>`<option value="${esc(c.placa)}">${esc(c.modelo)}</option>`).join("")+`<option value="GERAL">Geral</option>`;$("#fCar").value=fc;
+  const rows=events.filter(e=>e.status!=="Pendente"&&(!fc||e.placa===fc)&&(!fk||e.categoria===fk)&&(!fp||e.pago===fp)).sort((a,b)=>(b.data||"").localeCompare(a.data||""));
+  $("#histBody").innerHTML=rows.length?rows.map(e=>`<tr><td class="nowrap">${br(e.data)}</td><td>${esc(carName(e.placa))}</td><td>${esc(e.categoria)}</td><td>${esc(e.descricao||"—")}</td><td>${esc([e.responsavel,e.local].filter(Boolean).join(" · ")||"—")}</td>
+    <td class="num">${e.valor?money.format(e.valor):""}</td><td>${e.pago==="sim"?chip("ok","Pago"):e.pago==="nao"?chip("bad","Não pago"):""}</td>
+    <td>${(e.anexos||[]).map(a=>`<a href="${esc(blobUrl(a))}" target="_blank" rel="noopener">${esc(a.nome||"arquivo")}</a>`).join("<br>")}</td><td><button class="link" type="button" data-editev="${esc(e._id)}">editar</button></td></tr>`).join(""):`<tr><td colspan="9" class="sub" style="text-align:center;padding:22px">Nenhum registro com esse filtro.</td></tr>`;
+
+  $("#docs").innerHTML=cars.length?cars.map(c=>{const docs=c.documentos||[],L=lic(c);return fold("doc-"+c.placa,carSum(c),`
+    <div class="two"><dl class="kv">
+      <dt>Licenciamento</dt><dd>${esc(L.big)}</dd><dt>Seguro</dt><dd>${c.seguro?"até "+br(c.seguro):"sem data"}</dd>${c.seguroInfo?`<dt>Apólice</dt><dd>${esc(c.seguroInfo)}</dd>`:""}<dt>IPVA</dt><dd>${c.ipva?"vence "+br(c.ipva):"sem data"}</dd>
+      ${c.renavam?`<dt>Renavam</dt><dd>${esc(c.renavam)}</dd>`:""}${c.ano?`<dt>Ano</dt><dd>${esc(c.ano)}</dd>`:""}${c.cor?`<dt>Cor · comb.</dt><dd>${esc(c.cor)}</dd>`:""}</dl>
+      <div class="stack"><span class="label">Arquivos</span><div class="lines">${docs.length?docs.map((d,i)=>`<div class="line" style="grid-template-columns:minmax(0,1fr) auto">${fileHtml(d)}<span class="a">${assets?`<button class="link" type="button" data-rmdoc="${esc(c.placa)}:${i}">remover</button>`:""}</span></div>`).join(""):`<div class="sub" style="padding:6px 0">Nenhum arquivo ainda.</div>`}</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">${assets?`<button class="btn small" type="button" data-adddoc="${esc(c.placa)}">+ Anexar documento</button>`:""}${c.drive?`<a class="link" href="${esc(c.drive)}" target="_blank" rel="noopener">pasta no Drive</a>`:""}<button class="link" type="button" data-editcar="${esc(c.placa)}">editar dados</button></div></div></div>`)}).join(""):`<div class="empty">Carregando…</div>`;
+  $("#docs").style.gap="10px";
+
+  // por pessoa
+  $("#pessoasNote").textContent=mcp?"Ao salvar uma pendência com responsável e data marcada, o convite vai pra agenda da pessoa.":"Use “pôr na agenda” em cada item pra criar o evento no Google Agenda com o responsável como convidado.";
+  const byPerson=n=>pend.filter(e=>(e.atribuido||"")===n).sort((a,b)=>(a.agendado||"9999").localeCompare(b.agendado||"9999"));
+  $("#porPessoa").innerHTML=loaded?people.map(p=>{const l=byPerson(p.nome);return `<section class="panel" style="gap:8px"><div class="secthead"><h3>Pendências ${esc(p.nome)}</h3><span class="sub">${l.length} ${l.length===1?"item":"itens"}</span></div><div class="lines">${l.length?l.map(e=>linePend(e,{withCar:true})).join(""):`<div class="sub" style="padding:8px 0">Nada atribuído.</div>`}</div></section>`}).join(""):"";
+  const noOne=byPerson("");const toSched=cars.flatMap(c=>ROUTINE.map(([cat,key])=>[c,cat,routine(c.placa,cat,key)]).concat([[c,"Troca de óleo",oil(c)]]).filter(([c2,cat,s])=>(s.st==="bad"||s.st==="warn"||s.st==="none")&&!pendingOf(c2.placa).some(e=>e.categoria===cat)));
+  $("#semResp").innerHTML=loaded?fold("semresp",`<span class="nm"><b>Sem responsável</b><span>escolha quem faz e quando o carro vai estar livre</span></span>`,`
+    <div class="lines">${noOne.map(e=>linePend(e,{withCar:true})).join("")}${toSched.map(([c,cat,s])=>`<div class="line st-${s.st==="bad"?"bad":"warn"}"><span class="d">rotina</span><span class="k">${esc(c.modelo)} · ${esc(cat)}</span><span class="x">${esc(s.big)}<small>${esc(s.small)}</small></span><span class="a"><button class="btn small" type="button" data-agendar="${esc(c.placa)}|${esc(cat)}">Agendar</button></span></div>`).join("")}${!noOne.length&&!toSched.length?`<div class="sub" style="padding:8px 0">Tudo atribuído.</div>`:""}</div>`):"";
+
+  // situação
+  const tally=cars.map(c=>{const t={ok:0,warn:0,bad:0,none:0};statusList(c).forEach(([,s])=>t[s.st]++);return{c,t}});
+  const tot=tally.reduce((a,{t})=>{for(const k in t)a[k]+=t[k];return a},{ok:0,warn:0,bad:0,none:0});const all=tot.ok+tot.warn+tot.bad+tot.none;
+  $("#hero").innerHTML=loaded&&all?`<div class="h ok"><b>${Math.round(tot.ok/all*100)}%</b><span>dos itens em dia (${tot.ok} de ${all})</span></div><div class="h bad"><b>${tot.bad}</b><span>atrasados ou vencidos</span></div><div class="h warn"><b>${tot.warn}</b><span>pedindo atenção</span></div><div class="h"><b>${tot.none}</b><span>sem dado cadastrado</span></div><div class="h warn"><b>${pend.length}</b><span>pendências abertas</span></div>`:`<span class="sub">Carregando…</span>`;
+  const LBL={ok:"em dia",warn:"atenção",bad:"atrasado",none:"sem dado"};
+  $("#barsStatus").innerHTML=tally.map(({c,t})=>{const n=t.ok+t.warn+t.bad+t.none;return `<div class="bar"><span class="n">${esc(c.modelo)}</span><div class="track" role="img" aria-label="${esc(c.modelo)}: ${t.ok} em dia, ${t.warn} atenção, ${t.bad} atrasados, ${t.none} sem dado">${["ok","warn","bad","none"].filter(k=>t[k]).map(k=>`<span class="seg ${k}" style="flex:${t[k]}" title="${esc(c.modelo)} · ${t[k]} ${LBL[k]}: ${esc(statusList(c).filter(([,s])=>s.st===k).map(([l])=>l).join(", "))}"></span>`).join("")}</div><span class="v"><b>${t.ok}</b>/${n} em dia${t.bad?` · <b>${t.bad}</b> atrasado${t.bad>1?"s":""}`:""}</span></div>`}).join("");
+  const pc=[...cars.map(c=>({n:c.modelo,v:pendingOf(c.placa).length})),{n:"Geral",v:pendingOf("GERAL").length}],mx=Math.max(1,...pc.map(x=>x.v));
+  $("#barsPend").innerHTML=pc.map(x=>`<div class="bar"><span class="n">${esc(x.n)}</span><div class="track" style="background:none">${x.v?`<span class="seg ink" style="flex:0 0 ${x.v/mx*100}%;border-radius:4px" title="${esc(x.n)}: ${x.v} pendência(s)"></span>`:""}</div><span class="v"><b>${x.v}</b> ${x.v===1?"pendência":"pendências"}</span></div>`).join("");
+
+  const names=new Set(people.map(p=>p.nome));events.forEach(e=>e.responsavel&&names.add(e.responsavel));
+  $("#pessoas").innerHTML=[...names].map(p=>`<option value="${esc(p)}">`).join("");
+  $("#locais").innerHTML=[...new Set(events.map(e=>e.local).filter(Boolean))].map(p=>`<option value="${esc(p)}">`).join("");
+}
+
+/* ---------- carros ---------- */
+let carView=null,carSub="situacao";try{carSub=localStorage.getItem("frota-carsub")||"situacao"}catch{}
+function renderCars(){
+  const el=$("#carList");
+  if(!cars.length){el.innerHTML=`<div class="empty">${loaded?"Nenhum carro cadastrado.":"Carregando os carros…"}</div>`;return}
+  const c=carView&&carOf(carView);
+  if(!c){
+    el.innerHTML=`<div class="cargrid">${cars.map(c=>{const k=carCounts(c),att=k.bad||k.pend;return `<button class="carcard" type="button" data-openCar="${esc(c.placa)}">
+      <span class="top"><span><b>${esc(c.modelo)}</b><span class="own">${esc(c.proprietario||"")}</span></span>${plate(c.placa)}</span>
+      <span class="state ${att?"warn":"ok"}"><span class="dot"></span>${att?"Precisa de atenção":"Tudo em dia"}</span></button>`}).join("")}</div>
+      <div style="margin-top:14px">${mini("regras","Regras da rotina",`<div class="rules"><span>Lavar a cada <b>${rules.lavagem} dias</b></span><span>Calibrar a cada <b>${rules.calibragem} dias</b></span><span>Água e óleo a cada <b>${rules.agua} dias</b></span><span>Trocar óleo a cada <b>${nf.format(rules.oleoKm)} km</b></span><button class="link" type="button" id="btnRegras">alterar regras</button></div>`)}</div>`;
+    return;
+  }
+  const o=oil(c),p=pendingOf(c.placa),h=doneOf(c.placa),docs=c.documentos||[];
+  const SUBS=[["situacao","Situação"],["pendencias","Pendências"],["historico","Histórico"],["documentos","Documentos"]];
+  let body="";
+  if(carSub==="situacao")body=`<div class="panel" style="padding:4px 20px">${statusList(c).map(([l,s])=>`<div class="srow"><span class="nm2">${esc(l)}<small>${esc(s.small)}</small></span><span class="val ${s.st}"><span class="dot"></span>${esc(s.big)}</span></div>`).join("")}</div>`;
+  if(carSub==="pendencias")body=`<div class="panel">${p.length?`<div class="lines">${p.map(e=>linePend(e)).join("")}</div>`:`<div class="sub">Nenhuma pendência neste carro.</div>`}<div><button class="btn small" type="button" data-newpendcar="${esc(c.placa)}">+ Nova pendência</button></div></div>`;
+  if(carSub==="historico")body=`<div class="panel">${h.length?`<div class="lines">${h.map(e=>lineDone(e)).join("")}</div>`:`<div class="sub">Nada registrado ainda.</div>`}</div>`;
+  if(carSub==="documentos")body=`<div class="panel"><dl class="kv"><dt>Licenciamento</dt><dd>${esc(lic(c).big)}</dd><dt>Seguro</dt><dd>${c.seguro?"até "+br(c.seguro):"sem data"}</dd>${c.seguroInfo?`<dt>Apólice</dt><dd>${esc(c.seguroInfo)}</dd>`:""}<dt>IPVA</dt><dd>${c.ipva?"vence "+br(c.ipva):"sem data"}</dd>${c.renavam?`<dt>Renavam</dt><dd>${esc(c.renavam)}</dd>`:""}${c.ano?`<dt>Ano</dt><dd>${esc(c.ano)}</dd>`:""}${c.cor?`<dt>Cor · comb.</dt><dd>${esc(c.cor)}</dd>`:""}</dl>
+    <div class="lines">${docs.length?docs.map((d,i)=>`<div class="line" style="grid-template-columns:minmax(0,1fr) auto">${fileHtml(d)}<span class="a">${assets?`<button class="link" type="button" data-rmdoc="${esc(c.placa)}:${i}">remover</button>`:""}</span></div>`).join(""):`<div class="sub">Nenhum arquivo ainda.</div>`}</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">${assets?`<button class="btn small" type="button" data-adddoc="${esc(c.placa)}">+ Anexar documento</button>`:""}${c.drive?`<a class="link" href="${esc(c.drive)}" target="_blank" rel="noopener">pasta no Drive</a>`:""}</div></div>`;
+  el.innerHTML=`<div class="cardetail">
+    <button class="link backlink" type="button" data-closeCar>← Todos os carros</button>
+    <div class="dhead">${plate(c.placa,true)}<div class="who"><h2>${esc(c.modelo)}</h2><p class="sub" style="margin:2px 0 0">Proprietário: <b style="color:var(--ink)">${esc(c.proprietario||"—")}</b>${o.km?" · "+nf.format(o.km)+" km":""}</p></div><button class="link" type="button" data-editcar="${esc(c.placa)}">editar dados</button></div>
+    <div class="seg" role="group" aria-label="Seções do carro">${SUBS.map(([k,l])=>`<button type="button" data-carsub="${k}" aria-pressed="${carSub===k}">${l}</button>`).join("")}</div>
+    ${body}</div>`;
+}
+
+/* ---------- abas ---------- */
+function showTab(n){if(n==="carros"&&typeof carView!=="undefined"&&document.querySelector('.tab[data-tab="carros"][aria-selected="true"]')){carView=null;renderCars()}document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===n));["registrar","carros","pessoas","pendencias","historico","documentos","situacao"].forEach(k=>$("#tab-"+k).hidden=k!==n);try{localStorage.setItem("frota-tab3",n)}catch{}}
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>showTab(t.dataset.tab)));
+try{const s=localStorage.getItem("frota-tab3");if(s&&$("#tab-"+s))showTab(s)}catch{}
+$("#fCat").innerHTML=`<option value="">Todos</option>`+CATS.map(c=>`<option>${c}</option>`).join("");
+["#fCar","#fCat","#fPago"].forEach(s=>$(s).addEventListener("change",render));
+
+/* ---------- diálogo de registro ---------- */
+const dlgE=$("#dlgEvento");
+$("#evCat").innerHTML=CATS.map(c=>`<option>${c}</option>`).join("");
+function evToggle(){const pend=$("#evStatus").value==="Pendente";document.querySelectorAll('[data-e="done"]').forEach(x=>x.hidden=pend);document.querySelectorAll('[data-e="pend"]').forEach(x=>x.hidden=!pend);$("#evDataLbl").textContent=pend?"Aberta em":"Feito em"}
+$("#evStatus").addEventListener("change",evToggle);
+function renderEvFiles(){$("#evFiles").innerHTML=(editingEvent.anexos||[]).map((a,i)=>fileHtml(a,assets?`data-rmev="${i}"`:"")).join("")+evNewFiles.map(f=>`<span class="file"><span class="ext">NOVO</span><span>${esc(f.name)}</span></span>`).join("")}
+function openEvent(ev,done){
+  if(!db||!ev)return;editingEvent={...ev,anexos:[...(ev.anexos||[])]};evNewFiles=[];
+  $("#evCarro").innerHTML=cars.map(c=>`<option value="${esc(c.placa)}">${esc(c.modelo)} · ${esc(c.placa)}</option>`).join("")+`<option value="GERAL">Geral (todos os carros)</option>`;
+  $("#evCarro").value=ev.placa;$("#evCat").value=ev.categoria;$("#evStatus").value=done?"Finalizado":ev.status;
+  $("#evData").value=done?"":(ev.data||"");$("#evDesc").value=ev.descricao||"";$("#evResp").value=ev.responsavel||"";$("#evLocal").value=ev.local||"";
+  $("#evKm").value=ev.km??"";$("#evValor").value=ev.valor??"";$("#evPago").value=ev.pago||"";
+  $("#evAtr").innerHTML=personOpts(ev.atribuido||"");$("#evAg").value=ev.agendado||"";$("#evHora").value=ev.hora||"";$("#evCal").checked=!ev.agendaEnviada;
+  if(done&&!ev.responsavel&&ev.atribuido)$("#evResp").value=ev.atribuido;
+  $("#evAsk").hidden=!done;$("#evTitle").textContent=done?`Concluir: ${ev.categoria} · ${carName(ev.placa)}`:ev._new?`Agendar: ${ev.categoria} · ${carName(ev.placa)}`:"Editar registro";$("#evDel").hidden=!!ev._new;
+  document.querySelector('[data-e="anexo"]').hidden=!assets&&!editingEvent.anexos.length;$("#evFileInput").hidden=!assets;
+  renderEvFiles();evToggle();dlgE.showModal();if(done)$("#evData").focus();
+}
+$("#evFileInput").addEventListener("change",e=>{evNewFiles=[...evNewFiles,...e.target.files];e.target.value="";renderEvFiles()});
+$("#evCancel").addEventListener("click",()=>dlgE.close());
+let confirmDel=false;
+$("#evDel").addEventListener("click",async()=>{if(!confirmDel){confirmDel=true;$("#evDel").textContent="Toque de novo pra apagar";setTimeout(()=>{confirmDel=false;$("#evDel").textContent="Apagar"},4000);return}
+  confirmDel=false;$("#evDel").textContent="Apagar";try{await db.doc("eventos/"+editingEvent._id).delete();dlgE.close();toast("Registro apagado")}catch(e){fail(e)}});
+$("#formEvento").addEventListener("submit",async ev=>{
+  ev.preventDefault();const num=v=>v===""?null:Number(v),pend=$("#evStatus").value==="Pendente";const btn=$("#evSave");btn.disabled=true;
+  try{
+    const novos=evNewFiles.length&&assets?await uploadAll(evNewFiles):[];
+    const body={placa:$("#evCarro").value,categoria:$("#evCat").value,status:$("#evStatus").value,data:$("#evData").value,descricao:$("#evDesc").value.trim(),responsavel:pend?(editingEvent.responsavel||""):$("#evResp").value.trim(),local:$("#evLocal").value.trim(),
+      atribuido:$("#evAtr").value,agendado:$("#evAg").value||null,hora:$("#evHora").value||null,agendaEnviada:!!editingEvent.agendaEnviada,agendaId:editingEvent.agendaId||null,
+      km:pend?null:num($("#evKm").value),valor:pend?null:num($("#evValor").value),pago:pend?null:($("#evPago").value||null),anexos:[...editingEvent.anexos,...novos],criadoEm:editingEvent.criadoEm||new Date().toISOString(),atualizadoEm:new Date().toISOString()};
+    let calFail=null;
+    const schedChanged=body.agendado!==(editingEvent.agendado||null)||body.atribuido!==(editingEvent.atribuido||"")||body.hora!==(editingEvent.hora||null);
+    if(pend&&$("#evCal").checked&&body.atribuido&&body.agendado&&(!editingEvent.agendaEnviada||schedChanged)){const r=await sendCalendar(body);if(r.ok){body.agendaEnviada=true;body.agendaId=r.id}else calFail=r.why}
+    else if(schedChanged)body.agendaEnviada=false;
+    await (editingEvent._new?db.collection("eventos").doc():db.doc("eventos/"+editingEvent._id)).set(body);
+    if(!pend&&body.categoria==="Troca de óleo"&&body.km&&carOf(body.placa))await db.doc("carros/"+body.placa).update({oleoKm:body.km+(+rules.oleoKm||10000)});
+    dlgE.close();toast(calFail?"Salvo. "+calMsg(calFail):editingEvent.status==="Pendente"&&!pend?"Pendência concluída":body.agendaEnviada&&pend?"Salvo e enviado pra agenda":"Registro salvo");
+  }catch(e){fail(e)}finally{btn.disabled=false}
+});
+
+/* ---------- carro ---------- */
+const dlgC=$("#dlgCarro");
+const carFields={cModelo:"modelo",cPlaca:"placa",cProp:"proprietario",cRenavam:"renavam",cAno:"ano",cCor:"cor",cDrive:"drive",cRespLav:"respLavagem",cRespCal:"respCalibragem",cRespAgua:"respAgua",cLicAno:"licAno",cIpva:"ipva",cSeg:"seguro",cSegInfo:"seguroInfo",cOleoKm:"oleoKm",cOleoData:"oleoData",cObs:"obs"};
+function openCar(p){if(!db)return;editingCar=carOf(p);$("#carTitle").textContent=`${editingCar.modelo} · ${editingCar.placa}`;for(const[id,k]of Object.entries(carFields))$("#"+id).value=editingCar[k]??"";$("#cPlaca").readOnly=true;dlgC.showModal()}
+$("#cCancel").addEventListener("click",()=>dlgC.close());
+$("#formCarro").addEventListener("submit",async ev=>{ev.preventDefault();const body={};
+  for(const[id,k]of Object.entries(carFields)){if(k==="placa")continue;let v=$("#"+id).value.trim();if(k==="oleoKm"||k==="licAno")v=v?Number(v):"";body[k]=v===""?null:v}
+  try{await db.doc("carros/"+editingCar.placa).update(body);dlgC.close();toast("Dados salvos")}catch(e){fail(e)}});
+
+/* ---------- regras ---------- */
+const dlgR=$("#dlgRegras");
+$("#rCancel").addEventListener("click",()=>dlgR.close());
+$("#formRegras").addEventListener("submit",async ev=>{ev.preventDefault();
+  const r={lavagem:+$("#rLav").value,calibragem:+$("#rCal").value,agua:+$("#rAgua").value,oleoKm:+$("#rOleo").value,aviso:+$("#rAviso").value};
+  try{await db.doc("config/regras").set(r);dlgR.close();toast("Regras salvas")}catch(e){fail(e)}});
+
+/* ---------- arquivos ---------- */
+async function uploadAll(files){const out=[];for(const f of files){const r=await assets.upload(f);out.push({id:r.id,url:r.url,nome:f.name,tipo:r.contentType})}return out}
+$("#docInput").addEventListener("change",async e=>{const f=e.target.files[0];e.target.value="";if(!f||!docTarget||!assets)return;const c=carOf(docTarget);toast("Enviando "+f.name+"…");
+  try{const[a]=await uploadAll([f]);await db.doc("carros/"+c.placa).update({documentos:[...(c.documentos||[]),a]});toast("Documento anexado")}catch(err){fail(err)}});
+
+/* ---------- cliques ---------- */
+document.addEventListener("click",async e=>{
+  const t=e.target.closest("[data-opencar],[data-closecar],[data-carsub],[data-newpendcar],[data-agendar],[data-act],[data-pick],[data-pickall],[data-rmreg],[data-editev],[data-done],[data-editcar],[data-hist],[data-tabgo],[data-adddoc],[data-rmdoc],[data-rmev],#btnRegras");if(!t)return;const d=t.dataset;
+  if(t.id==="btnRegras"){$("#rLav").value=rules.lavagem;$("#rCal").value=rules.calibragem;$("#rAgua").value=rules.agua;$("#rOleo").value=rules.oleoKm;$("#rAviso").value=rules.aviso;dlgR.showModal();return}
+  if(d.act){chooseAct(d.act);return}
+  if(d.pick){regSel.has(d.pick)?regSel.delete(d.pick):regSel.add(d.pick);renderRegCars();const r=ROUTINE.find(x=>x[0]===regAct);if(r&&regSel.size===1&&!$("#regResp").value){const c=carOf([...regSel][0]);if(c?.[r[2]])$("#regResp").value=c[r[2]]}return}
+  if("pickall" in d){if(regSel.size===cars.length)regSel.clear();else cars.forEach(c=>regSel.add(c.placa));renderRegCars();return}
+  if(d.rmreg!==undefined){regFiles.splice(+d.rmreg,1);renderRegFiles();return}
+  if(d.opencar){carView=d.opencar;renderCars();scrollTo({top:0});return}
+  if("closecar" in d){carView=null;renderCars();return}
+  if(d.carsub){carSub=d.carsub;try{localStorage.setItem("frota-carsub",carSub)}catch{};renderCars();return}
+  if(d.newpendcar){showTab("registrar");chooseAct("__pend");regSel.clear();regSel.add(d.newpendcar);renderRegCars();return}
+  if(d.agendar){const[pl,cat]=d.agendar.split("|");openEvent({_new:true,placa:pl,categoria:cat,status:"Pendente",data:isoToday(),descricao:"",anexos:[]});return}
+  if(d.editev){openEvent(events.find(x=>x._id===d.editev));return}
+  if(d.done){openEvent(events.find(x=>x._id===d.done),true);return}
+  if(d.editcar){openCar(d.editcar);return}
+  if(d.hist){showTab("historico");$("#fCar").value=d.hist;render();return}
+  if(d.tabgo){showTab(d.tabgo);return}
+  if(d.adddoc){docTarget=d.adddoc;$("#docInput").click();return}
+  if(d.rmdoc){const[p,i]=d.rmdoc.split(":");const c=carOf(p);const docs=[...(c.documentos||[])];docs.splice(+i,1);try{await db.doc("carros/"+p).update({documentos:docs});toast("Arquivo removido")}catch(err){fail(err)}return}
+  if(d.rmev!==undefined){editingEvent.anexos.splice(+d.rmev,1);renderEvFiles();return}
+});
+function fail(e){const c=e?.code;console.warn("frota:",e);
+  if(c==="permission-denied"||c==="invalid_argument")toast(fbUser?"Esta conta não tem permissão pra editar o painel.":"Entre com sua conta Google pra editar.");
+  else if(c==="google-auth"||c==="no-token")toast("Sua sessão do Google expirou. Tente de novo que eu peço a confirmação.");
+  else if(String(c).startsWith("google-"))toast("O Google recusou o pedido ("+String(c).slice(7)+"). Tente de novo em instantes.");
+  else if(c==="quota_exceeded")toast("O painel atingiu o limite de armazenamento.");
+  else if(c==="unsupported_type")toast("Esse tipo de arquivo não é aceito. Use PDF ou foto.");
+  else if(c==="too_large")toast("Arquivo grande demais (máximo 20 MB).");
+  else toast("Não deu pra salvar agora. Tente de novo em instantes.")}
+
+/* ---------- início ---------- */
+function renderAuth(){
+  const box=$("#authbox");
+  if(!fbUser)box.innerHTML=`<button class="btn small" type="button" id="btnLogin">Entrar pra editar</button>`;
+  else box.innerHTML=`<span>${isEditor?"Editando como":"Conectado como"} <b>${esc(fbUser.displayName||fbUser.email)}</b></span><button class="link" type="button" id="btnLogout">sair</button>`;
+  document.body.classList.toggle("ro",!isEditor);
+  if(!isEditor&&!$("#tab-registrar").hidden)showTab("pendencias");
+}
+document.addEventListener("click",e=>{if(e.target.closest("#btnLogin"))signIn();if(e.target.closest("#btnLogout")){signOut(auth);gTok=null;try{sessionStorage.removeItem("frota-gtok")}catch{}}});
+let unsubPessoas=null;
+function setEditor(v){isEditor=v;assets=v?DRIVE:null;mcp=v?CAL:null;renderAuth();render();if(regAct)chooseAct(regAct)}
+onAuthStateChanged(auth,u=>{
+  fbUser=u;if(unsubPessoas){unsubPessoas();unsubPessoas=null}
+  if(!u){setEditor(false);return}
+  // quem pode ler privado/ é editor (regra do banco); assim nenhum email fica no código do site
+  unsubPessoas=db.doc("privado/pessoas").onSnapshot(s=>{if(s.exists&&Array.isArray(s.data().lista))people=s.data().lista;if(!isEditor)setEditor(true);else render()},
+    ()=>{setEditor(false);toast("Esta conta pode só visualizar. Pra editar, entre com a conta do Tiago ou do Davi.")});
+});
+db=FDB;window.__frota={db:FDB,auth};
+document.body.classList.add("ro");renderAuth();render();
+db.collection("carros").onSnapshot(s=>{cars=s.docs.map(d=>({...d.data()})).sort((a,b)=>(a.ordem||99)-(b.ordem||99));loaded=true;render()},e=>{console.warn(e);$("#recentWrap").innerHTML=`<div class="sub">Não foi possível carregar os dados agora. Recarregue a página.</div>`});
+db.collection("eventos").onSnapshot(s=>{events=s.docs.map(d=>({...d.data(),_id:d.id}));render()},e=>console.warn(e));
+db.doc("config/regras").onSnapshot(s=>{rules={...DEFAULT_RULES,...(s.exists?s.data():{})};render()},()=>{});
+</script>
+
+</body>
+</html>
