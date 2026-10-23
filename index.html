@@ -174,7 +174,19 @@ table.hist{border-collapse:collapse;width:100%;font-size:15px;min-width:920px}
 /* login / somente leitura */
 .authbox{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
 .authbox b{color:var(--ink)}
-body.ro .tab[data-tab="registrar"],body.ro [data-done],body.ro [data-editev],body.ro [data-agendar],body.ro [data-editcar],body.ro [data-adddoc],body.ro [data-rmdoc],body.ro [data-newpend],body.ro [data-newpendcar],body.ro #btnRegras,body.ro .calk{display:none!important}
+body.ro .tab[data-tab="registrar"],body.ro .tab[data-tab="caderno"],body.ro [data-etapa],body.ro [data-rmtrip],body.ro [data-done],body.ro [data-editev],body.ro [data-agendar],body.ro [data-editcar],body.ro [data-adddoc],body.ro [data-rmdoc],body.ro [data-newpend],body.ro [data-newpendcar],body.ro #btnRegras,body.ro .calk{display:none!important}
+/* etapas do orçamento */
+.steps{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 4px}
+.steps span{font-family:var(--f-head);font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+.steps span.on{background:var(--ok-bg);color:var(--ok)}
+.steps span.cur{background:var(--warn-bg);color:var(--warn)}
+.qrs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.qr{display:flex;flex-direction:column;align-items:center;gap:6px;border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;background:#fff;color:#1d1718}
+.qr img{width:120px;height:120px;image-rendering:pixelated}
+.qr b{font-family:var(--f-head)}
+.tbl{width:100%;border-collapse:collapse;font-size:15px}
+.tbl th,.tbl td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left}
+.tbl th{font-family:var(--f-head);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
 /* sanfonas */
 .fold{background:var(--surface);border:1px solid var(--line);border-radius:12px;min-width:0}
 .fold>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;padding:14px 18px;border-radius:12px}
@@ -248,6 +260,7 @@ a{color:var(--brand)}
       <button class="tab" role="tab" data-tab="pessoas" aria-selected="false" type="button">Por pessoa</button>
       <button class="tab" role="tab" data-tab="historico" aria-selected="false" type="button">Histórico</button>
       <button class="tab" role="tab" data-tab="documentos" aria-selected="false" type="button">Documentos</button>
+      <button class="tab" role="tab" data-tab="caderno" aria-selected="false" type="button">Caderno</button>
       <button class="tab" role="tab" data-tab="situacao" aria-selected="false" type="button">Situação</button>
     </nav>
   </div>
@@ -325,12 +338,27 @@ a{color:var(--brand)}
         <div class="secthead"><h3>Rotina e documentos por carro</h3></div>
         <div class="legend-row"><span><i class="sw ok"></i>Em dia</span><span><i class="sw warn"></i>Atenção</span><span><i class="sw bad"></i>Atrasado / vencido</span><span><i class="sw none"></i>Sem dado</span></div>
         <div class="bars" id="barsStatus"></div>
-        <p class="hint" style="margin:0">Cada carro tem 7 itens: lavagem, calibragem, água e óleo, troca de óleo, licenciamento, seguro e IPVA.</p>
+        <p class="hint" style="margin:0">Cada carro tem 8 itens: lavagem, calibragem, água e óleo, troca de óleo, revisão, licenciamento, seguro e IPVA.</p>
       </div>
       <div class="panel">
         <div class="secthead"><h3>Pendências abertas por carro</h3></div>
         <div class="bars" id="barsPend"></div>
       </div>
+    </div>
+  </section>
+
+  <section id="tab-caderno" hidden>
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div class="panel">
+        <div class="secthead"><h3>Gasolina do mês</h3><label style="flex-direction:row;align-items:center;gap:8px">Mês <input type="month" id="cadMes" style="width:auto"></label></div>
+        <div id="cadResumo"></div>
+        <p class="hint" style="margin:0" id="cadHint"></p>
+      </div>
+      <div class="panel">
+        <div class="secthead"><h3>Usos anotados</h3><span class="sub" id="cadCount"></span></div>
+        <div class="lines" id="cadLista"></div>
+      </div>
+      <div class="panel" id="cadConfig"></div>
     </div>
   </section>
 
@@ -396,9 +424,28 @@ a{color:var(--brand)}
       <div class="label full">Óleo</div>
       <label>Próxima troca (km)<input type="number" id="cOleoKm" min="0"></label>
       <label>Próxima troca (data)<input type="date" id="cOleoData"></label>
+      <div class="label full">Revisão e consumo</div>
+      <label>Km da última revisão<input type="number" id="cRevKm" min="0"></label>
+      <label>Consumo médio (km por litro)<input type="number" id="cKmL" min="1" step="0.1"></label>
       <label class="full">Observações<textarea id="cObs" rows="2"></textarea></label>
     </div>
     <div class="foot"><span class="grow"></span><button class="btn" type="button" id="cCancel">Cancelar</button><button class="btn brand" type="submit">Salvar</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlgEtapa">
+  <form class="dlg" id="formEtapa" method="dialog">
+    <h2 id="etTitle">Orçamento</h2>
+    <div class="ask" id="etAsk">Em que dia foi? Preencha a data antes de salvar.</div>
+    <div class="form">
+      <label><span id="etDataLbl">Data</span><input type="date" id="etData" required></label>
+      <label data-et="orc">Onde (concessionária, Sampaio…)<input id="etLocal" list="locais"></label>
+      <label data-et="orc">Valor do orçamento (R$)<input type="number" id="etValor" inputmode="decimal" step="0.01" min="0"></label>
+      <label data-et="apr">Quem aprovou<input id="etPor"></label>
+      <label class="full">Observação<input id="etObs"></label>
+      <div class="full" data-et="orc" style="display:flex;flex-direction:column;gap:6px"><span class="label">PDF ou foto do orçamento</span><div class="files" id="etFiles"></div><input type="file" id="etFileInput" multiple accept="image/*,application/pdf"></div>
+    </div>
+    <div class="foot"><span class="grow"></span><button class="btn" type="button" id="etCancel">Cancelar</button><button class="btn brand" type="submit" id="etSave">Salvar</button></div>
   </form>
 </dialog>
 
@@ -410,7 +457,10 @@ a{color:var(--brand)}
       <label>Calibrar a cada (dias)<input type="number" id="rCal" min="1" required></label>
       <label>Água e óleo a cada (dias)<input type="number" id="rAgua" min="1" required></label>
       <label>Trocar óleo a cada (km)<input type="number" id="rOleo" min="1000" step="500" required></label>
-      <label class="full">Avisar quando faltarem (dias)<input type="number" id="rAviso" min="0" required></label>
+      <label>Revisão a cada (km)<input type="number" id="rRev" min="1000" step="500" required></label>
+      <label>Avisar quando faltarem (dias)<input type="number" id="rAviso" min="0" required></label>
+      <label>Quem aprova orçamentos<input id="rAprov" required></label>
+      <label>Preço do litro (R$)<input type="number" id="rPreco" min="0" step="0.01"></label>
     </div>
     <div class="foot"><span class="grow"></span><button class="btn" type="button" id="rCancel">Cancelar</button><button class="btn brand" type="submit">Salvar</button></div>
   </form>
@@ -421,16 +471,17 @@ a{color:var(--brand)}
 <input type="file" id="docInput" accept="image/*,application/pdf" hidden>
 <div class="toast" id="toast" hidden></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {getFirestore,collection,doc,onSnapshot as fsSnap,setDoc,updateDoc,deleteDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore,collection,collectionGroup,doc,onSnapshot as fsSnap,setDoc,updateDoc,deleteDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 const fbApp=initializeApp({apiKey:"AIzaSyBU5oSbfioSnDQgkvJoq5pE9NHQRRp8T-g",authDomain:"frota-ceac.firebaseapp.com",projectId:"frota-ceac",storageBucket:"frota-ceac.firebasestorage.app",messagingSenderId:"1077001594650",appId:"1:1077001594650:web:b5c0931935270c89856ea3"});
 const fsdb=getFirestore(fbApp),auth=getAuth(fbApp);
 const SCOPES=["https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/calendar.events"];
 /* adaptador: mesma interface que o painel usava */
 const wrapDoc=r=>({get id(){return r.id},set:d=>setDoc(r,d),update:d=>updateDoc(r,d),delete:()=>deleteDoc(r),onSnapshot:(cb,err)=>fsSnap(r,s=>cb({id:s.id,exists:s.exists(),data:()=>s.data()}),err)});
-const FDB={doc:p=>wrapDoc(doc(fsdb,p)),collection:p=>{const c=collection(fsdb,p);return{doc:id=>wrapDoc(id?doc(c,id):doc(c)),onSnapshot:(cb,err)=>fsSnap(c,s=>cb({docs:s.docs.map(d=>({id:d.id,exists:true,data:()=>d.data()}))}),err)}}};
+const FDB={group:n=>({onSnapshot:(cb,err)=>fsSnap(collectionGroup(fsdb,n),s=>cb({docs:s.docs.map(d=>({id:d.id,path:d.ref.path,exists:true,data:()=>d.data()}))}),err)}),doc:p=>wrapDoc(doc(fsdb,p)),collection:p=>{const c=collection(fsdb,p);return{doc:id=>wrapDoc(id?doc(c,id):doc(c)),onSnapshot:(cb,err)=>fsSnap(c,s=>cb({docs:s.docs.map(d=>({id:d.id,exists:true,data:()=>d.data()}))}),err)}}};
 let fbUser=null,isEditor=false,gTok=null,gTokExp=0;
 try{const t=JSON.parse(sessionStorage.getItem("frota-gtok")||"null");if(t&&t.exp>Date.now()){gTok=t.tok;gTokExp=t.exp}}catch{}
 function googleProvider(){const p=new GoogleAuthProvider();SCOPES.forEach(s=>p.addScope(s));if(fbUser?.email)p.setCustomParameters({login_hint:fbUser.email});return p}
@@ -459,7 +510,7 @@ const CAL={async callTool(_s,_t,i){
   return{payload:r}}};
 
 const CATS=["Lavagem","Calibragem","Água e óleo","Troca de óleo","Revisão","Mecânica","Pneus","Estética","Documentos","Seguro","IPVA","Licenciamento","Abastecimento","Outro"];
-const DEFAULT_RULES={lavagem:30,calibragem:15,agua:15,oleoKm:10000,aviso:3};
+const DEFAULT_RULES={lavagem:30,calibragem:15,agua:15,oleoKm:10000,revisaoKm:10000,aviso:3,aprovador:"Renato",precoLitro:null};
 const ROUTINE_CATS=["Lavagem","Calibragem","Água e óleo","Troca de óleo"];
 const ROUTINE=[["Lavagem","lavagem","respLavagem"],["Calibragem","calibragem","respCalibragem"],["Água e óleo","agua","respAgua"]];
 let db=null,assets=null,mcp=null,people=[{nome:"Tiago",email:""},{nome:"Davi",email:""}],cars=[],events=[],rules={...DEFAULT_RULES},loaded=false;
@@ -488,7 +539,14 @@ const eventsOf=p=>events.filter(e=>e.placa===p).sort((a,b)=>(b.data||"").localeC
 const doneOf=p=>eventsOf(p).filter(e=>e.status!=="Pendente");
 const pendingOf=p=>events.filter(e=>e.placa===p&&e.status==="Pendente").sort((a,b)=>(a.data||"").localeCompare(b.data||""));
 const lastDone=(p,cat)=>doneOf(p).find(e=>e.categoria===cat&&e.data);
-function kmAtual(p){let k=0;for(const e of events)if(e.placa===p&&+e.km>k)k=+e.km;return k||null}
+function kmAtual(p){let k=+(carOf(p)?.kmAtual||0);for(const e of events)if(e.placa===p&&+e.km>k)k=+e.km;for(const t of trips)if(t.placa===p&&+t.km>k)k=+t.km;return k||null}
+function revisao(c){
+  const km=kmAtual(c.placa),every=+rules.revisaoKm||10000;
+  if(!c.revisaoKm)return{st:"none",big:"Sem dado",small:"cadastrar km da última revisão"};
+  const next=+c.revisaoKm+every;
+  if(!km)return{st:"ok",big:`Em ${nf.format(next)} km`,small:"km atual não informado"};
+  const left=next-km;return{st:left<=0?"bad":left<=1000?"warn":"ok",big:left<=0?`Passou ${nf.format(-left)} km`:`Faltam ${nf.format(left)} km`,small:`próxima em ${nf.format(next)} km · última em ${nf.format(+c.revisaoKm)}`};
+}
 function routine(p,cat,key){
   const e=lastDone(p,cat),every=+rules[key]||30;
   if(!e)return{st:"none",big:"Sem registro",small:`a cada ${every} dias`};
@@ -511,7 +569,7 @@ function due(iso,what){
   return{st:d<=30?"warn":"ok",big:d<=30?`Vence em ${d} ${plural(d,"dia","dias")}`:"Em dia",small:"até "+br(iso)};
 }
 function lic(c){const y=new Date().getFullYear();if(!c.licAno)return{st:"none",big:"Sem dado",small:"cadastrar ano pago"};return +c.licAno>=y?{st:"ok",big:`${c.licAno} pago`,small:"exercício em dia"}:{st:"bad",big:`Último: ${c.licAno}`,small:`falta pagar ${y}`}}
-function statusList(c){return[...ROUTINE.map(([cat,key])=>[cat,routine(c.placa,cat,key)]),["Troca de óleo",oil(c)],["Licenciamento",lic(c)],["Seguro",due(c.seguro,"vencimento")],["IPVA",due(c.ipva,"vencimento")]]}
+function statusList(c){return[...ROUTINE.map(([cat,key])=>[cat,routine(c.placa,cat,key)]),["Troca de óleo",oil(c)],["Revisão",revisao(c)],["Licenciamento",lic(c)],["Seguro",due(c.seguro,"vencimento")],["IPVA",due(c.ipva,"vencimento")]]}
 function attention(c){return statusList(c).filter(([,s])=>s.st==="bad"||s.st==="warn"||s.st==="none")}
 
 /* ---------- agenda ---------- */
@@ -553,16 +611,31 @@ function lineDone(e,{withCar}={}){
     <span class="x">${esc(det[0]||"—")}${det.length>1?`<small>${esc(det.slice(1).join(" · "))}</small>`:""}${(e.anexos||[]).length?`<small>${(e.anexos||[]).map(a=>`<a href="${esc(blobUrl(a))}" target="_blank" rel="noopener">${esc(a.nome)}</a>`).join(" · ")}</small>`:""}</span>
     <span class="a">${e.pago==="nao"?chip("bad","Não pago"):e.pago==="sim"?chip("ok","Pago"):""}<button class="link" type="button" data-editev="${esc(e._id)}">editar</button></span></div>`;
 }
+const ORC_CATS=["Revisão","Mecânica","Pneus","Estética"];
+const ETAPAS=[["orcar","Fazer orçamento"],["orcado","Orçamento feito"],["aguardando","Aguardando aprovação"],["aprovado","Aprovado"]];
+const etapaOf=e=>e.etapa||(ORC_CATS.includes(e.categoria)?"orcar":null);
+function stepper(e){const et=etapaOf(e);if(!et)return"";const i=ETAPAS.findIndex(x=>x[0]===et);
+  return `<span class="steps">${ETAPAS.slice(1).map(([k,l],j)=>`<span class="${j+1<=i?"on":""}${j+1===i?" cur":""}">${l}</span>`).join("")}<span>Feito</span></span>`}
+function nextStep(e){const et=etapaOf(e),ap=rules.aprovador||"Renato";
+  if(et==="orcar")return `<button class="btn small brand" type="button" data-etapa="orcar|${esc(e._id)}">Registrar orçamento</button>`;
+  if(et==="orcado")return `<button class="btn small brand" type="button" data-etapa="enviar|${esc(e._id)}">Enviei pro ${esc(ap)}</button>`;
+  if(et==="aguardando")return `<button class="btn small brand" type="button" data-etapa="aprovar|${esc(e._id)}">${esc(ap)} aprovou</button>`;
+  return `<button class="btn small brand" type="button" data-done="${esc(e._id)}">Feito</button>`}
+function stageInfo(e){const o=e.orcamento,a=e.aprovacao,out=[];
+  if(o)out.push(`orçamento ${o.valor?money.format(o.valor):""}${o.local?" · "+o.local:""}${o.data?" em "+brs(o.data):""}`);
+  if(e.enviadoEm&&etapaOf(e)==="aguardando")out.push(`enviado em ${brs(e.enviadoEm)}`);
+  if(a)out.push(`aprovado por ${a.por} em ${brs(a.data)}`);return out.join(" · ")}
 function linePend(e,{withCar}={}){
   const late=e.agendado&&daysBetween(isoToday(),e.agendado)<0;
   const when=e.agendado?`<span class="when">${late?"era pra ":""}${br(e.agendado)}${e.hora?" "+e.hora:""}</span>`:"";
   return `<div class="line st-${late?"bad":"warn"}"><span class="d">${e.agendado?when:"desde "+brs(e.data)}</span><span class="k">${esc(withCar?carName(e.placa)+" · "+e.categoria:e.categoria)}</span>
     <span class="x">${esc(e.descricao||"—")}<small>${esc([e.atribuido?"Responsável: "+e.atribuido:"Sem responsável",e.local].filter(Boolean).join(" · "))}${e.agendado?` · ${e.agendaEnviada?"na agenda ✓":`<a class="calk" href="${esc(calLink(e))}" target="_blank" rel="noopener">pôr na agenda</a>`}`:""}</small></span>
-    <span class="a"><button class="btn small brand" type="button" data-done="${esc(e._id)}">Feito</button><button class="link" type="button" data-editev="${esc(e._id)}">editar</button></span></div>`;
+    ${etapaOf(e)?`<span class="x" style="grid-column:1/-1">${stepper(e)}${stageInfo(e)?`<small>${esc(stageInfo(e))}${(e.orcamento?.anexos||[]).map(a=>` · <a href="${esc(blobUrl(a))}" target="_blank" rel="noopener">${esc(a.nome)}</a>`).join("")}</small>`:""}</span>`:""}
+    <span class="a">${nextStep(e)}${etapaOf(e)&&etapaOf(e)!=="aprovado"?`<button class="link" type="button" data-done="${esc(e._id)}">já foi feito</button>`:""}<button class="link" type="button" data-editev="${esc(e._id)}">editar</button></span></div>`;
 }
 function lineStatus(label,s,c){
   return `<div class="line st-${s.st}"><span class="d">${s.st==="bad"?"atrasado":s.st==="warn"?"atenção":"sem dado"}</span><span class="k">${esc(label)}</span><span class="x">${esc(s.big)}<small>${esc(s.small)}</small></span>
-    <span class="a">${["Licenciamento","Seguro","IPVA","Troca de óleo"].includes(label)&&s.st==="none"?`<button class="link" type="button" data-editcar="${esc(c.placa)}">cadastrar</button>`:""}${ROUTINE_CATS.includes(label)&&!pendingOf(c.placa).some(e=>e.categoria===label)?`<button class="btn small" type="button" data-agendar="${esc(c.placa)}|${esc(label)}">Agendar</button>`:""}</span></div>`;
+    <span class="a">${["Licenciamento","Seguro","IPVA","Troca de óleo","Revisão"].includes(label)&&s.st==="none"?`<button class="link" type="button" data-editcar="${esc(c.placa)}">cadastrar</button>`:""}${ROUTINE_CATS.includes(label)&&!pendingOf(c.placa).some(e=>e.categoria===label)?`<button class="btn small" type="button" data-agendar="${esc(c.placa)}|${esc(label)}">Agendar</button>`:""}</span></div>`;
 }
 const stripHtml=c=>`<div class="strip">${statusList(c).map(([l,s])=>`<div class="s-${s.st}"><span class="label">${esc(l)}</span><span class="big"><span class="dot"></span>${esc(s.big)}</span><small>${esc(s.small)}</small></div>`).join("")}</div>`;
 
@@ -688,6 +761,7 @@ function render(){
   const pc=[...cars.map(c=>({n:c.modelo,v:pendingOf(c.placa).length})),{n:"Geral",v:pendingOf("GERAL").length}],mx=Math.max(1,...pc.map(x=>x.v));
   $("#barsPend").innerHTML=pc.map(x=>`<div class="bar"><span class="n">${esc(x.n)}</span><div class="track" style="background:none">${x.v?`<span class="seg ink" style="flex:0 0 ${x.v/mx*100}%;border-radius:4px" title="${esc(x.n)}: ${x.v} pendência(s)"></span>`:""}</div><span class="v"><b>${x.v}</b> ${x.v===1?"pendência":"pendências"}</span></div>`).join("");
 
+  renderCaderno();
   const names=new Set(people.map(p=>p.nome));events.forEach(e=>e.responsavel&&names.add(e.responsavel));
   $("#pessoas").innerHTML=[...names].map(p=>`<option value="${esc(p)}">`).join("");
   $("#locais").innerHTML=[...new Set(events.map(e=>e.local).filter(Boolean))].map(p=>`<option value="${esc(p)}">`).join("");
@@ -723,7 +797,7 @@ function renderCars(){
 }
 
 /* ---------- abas ---------- */
-function showTab(n){if(n==="carros"&&typeof carView!=="undefined"&&document.querySelector('.tab[data-tab="carros"][aria-selected="true"]')){carView=null;renderCars()}document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===n));["registrar","carros","pessoas","pendencias","historico","documentos","situacao"].forEach(k=>$("#tab-"+k).hidden=k!==n);try{localStorage.setItem("frota-tab3",n)}catch{}}
+function showTab(n){if(n==="carros"&&typeof carView!=="undefined"&&document.querySelector('.tab[data-tab="carros"][aria-selected="true"]')){carView=null;renderCars()}document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===n));["registrar","carros","pessoas","pendencias","historico","documentos","caderno","situacao"].forEach(k=>$("#tab-"+k).hidden=k!==n);try{localStorage.setItem("frota-tab3",n)}catch{}}
 document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>showTab(t.dataset.tab)));
 try{const s=localStorage.getItem("frota-tab3");if(s&&$("#tab-"+s))showTab(s)}catch{}
 $("#fCat").innerHTML=`<option value="">Todos</option>`+CATS.map(c=>`<option>${c}</option>`).join("");
@@ -758,31 +832,98 @@ $("#formEvento").addEventListener("submit",async ev=>{
     const novos=evNewFiles.length&&assets?await uploadAll(evNewFiles):[];
     const body={placa:$("#evCarro").value,categoria:$("#evCat").value,status:$("#evStatus").value,data:$("#evData").value,descricao:$("#evDesc").value.trim(),responsavel:pend?(editingEvent.responsavel||""):$("#evResp").value.trim(),local:$("#evLocal").value.trim(),
       atribuido:$("#evAtr").value,agendado:$("#evAg").value||null,hora:$("#evHora").value||null,agendaEnviada:!!editingEvent.agendaEnviada,agendaId:editingEvent.agendaId||null,
-      km:pend?null:num($("#evKm").value),valor:pend?null:num($("#evValor").value),pago:pend?null:($("#evPago").value||null),anexos:[...editingEvent.anexos,...novos],criadoEm:editingEvent.criadoEm||new Date().toISOString(),atualizadoEm:new Date().toISOString()};
+      km:pend?null:num($("#evKm").value),valor:pend?null:num($("#evValor").value),pago:pend?null:($("#evPago").value||null),anexos:[...editingEvent.anexos,...novos],etapa:editingEvent.etapa||null,orcamento:editingEvent.orcamento||null,aprovacao:editingEvent.aprovacao||null,enviadoEm:editingEvent.enviadoEm||null,criadoEm:editingEvent.criadoEm||new Date().toISOString(),atualizadoEm:new Date().toISOString()};
     let calFail=null;
     const schedChanged=body.agendado!==(editingEvent.agendado||null)||body.atribuido!==(editingEvent.atribuido||"")||body.hora!==(editingEvent.hora||null);
     if(pend&&$("#evCal").checked&&body.atribuido&&body.agendado&&(!editingEvent.agendaEnviada||schedChanged)){const r=await sendCalendar(body);if(r.ok){body.agendaEnviada=true;body.agendaId=r.id}else calFail=r.why}
     else if(schedChanged)body.agendaEnviada=false;
     await (editingEvent._new?db.collection("eventos").doc():db.doc("eventos/"+editingEvent._id)).set(body);
     if(!pend&&body.categoria==="Troca de óleo"&&body.km&&carOf(body.placa))await db.doc("carros/"+body.placa).update({oleoKm:body.km+(+rules.oleoKm||10000)});
+    if(!pend&&body.categoria==="Revisão"&&body.km&&carOf(body.placa))await db.doc("carros/"+body.placa).update({revisaoKm:body.km});
     dlgE.close();toast(calFail?"Salvo. "+calMsg(calFail):editingEvent.status==="Pendente"&&!pend?"Pendência concluída":body.agendaEnviada&&pend?"Salvo e enviado pra agenda":"Registro salvo");
   }catch(e){fail(e)}finally{btn.disabled=false}
 });
 
+/* ---------- etapas ---------- */
+const dlgEt=$("#dlgEtapa");let etEv=null,etKind=null,etFiles=[];
+function openEtapa(kind,id){
+  etEv=events.find(x=>x._id===id);etKind=kind;etFiles=[];if(!etEv)return;
+  const ap=rules.aprovador||"Renato";
+  $("#etTitle").textContent=(kind==="orcar"?"Orçamento":kind==="enviar"?`Enviado pro ${ap}`:`Aprovação do ${ap}`)+` · ${etEv.categoria} · ${carName(etEv.placa)}`;
+  $("#etDataLbl").textContent=kind==="orcar"?"Data do orçamento":kind==="enviar"?"Quando enviou":"Quando aprovou";
+  $("#etData").value="";$("#etLocal").value=etEv.local||"";$("#etValor").value="";$("#etPor").value=ap;$("#etObs").value="";
+  document.querySelectorAll('[data-et="orc"]').forEach(x=>x.hidden=kind!=="orcar");document.querySelectorAll('[data-et="apr"]').forEach(x=>x.hidden=kind!=="aprovar");
+  $("#etFileInput").hidden=!assets;$("#etFiles").innerHTML="";dlgEt.showModal();$("#etData").focus();
+}
+$("#etFileInput").addEventListener("change",e=>{etFiles=[...etFiles,...e.target.files];e.target.value="";$("#etFiles").innerHTML=etFiles.map(f=>`<span class="file"><span class="ext">NOVO</span><span>${esc(f.name)}</span></span>`).join("")});
+$("#etCancel").addEventListener("click",()=>dlgEt.close());
+$("#formEtapa").addEventListener("submit",async ev=>{
+  ev.preventDefault();const btn=$("#etSave");btn.disabled=true;const data=$("#etData").value,obs=$("#etObs").value.trim();
+  try{
+    let up={atualizadoEm:new Date().toISOString()};
+    if(etKind==="orcar"){const anexos=etFiles.length&&assets?await uploadAll(etFiles):[];up={...up,etapa:"orcado",local:$("#etLocal").value.trim()||etEv.local||"",orcamento:{data,local:$("#etLocal").value.trim(),valor:$("#etValor").value?+$("#etValor").value:null,anexos,obs}}}
+    if(etKind==="enviar")up={...up,etapa:"aguardando",enviadoEm:data};
+    if(etKind==="aprovar")up={...up,etapa:"aprovado",aprovacao:{por:$("#etPor").value.trim()||rules.aprovador||"Renato",data,obs}};
+    await db.doc("eventos/"+etEv._id).update(up);dlgEt.close();toast(etKind==="orcar"?"Orçamento registrado":etKind==="enviar"?"Marcado como enviado":"Aprovação registrada");
+  }catch(e){fail(e)}finally{btn.disabled=false}
+});
+
+/* ---------- caderno (diário de bordo) ---------- */
+let trips=[],tripsUnsub=null,cadCfg=null,cadUnsub=null,kmSynced={};
+function monthNow(){return isoToday().slice(0,7)}
+function renderCaderno(){
+  if(!isEditor)return;
+  const mes=$("#cadMes").value||monthNow();if(!$("#cadMes").value)$("#cadMes").value=mes;
+  const doMes=trips.filter(t=>(t.data||"").slice(0,7)===mes).sort((a,b)=>(b.data||"").localeCompare(a.data||"")||(b.km-a.km));
+  const preco=+rules.precoLitro||0,by={};let semConsumo=false;
+  for(const t of doMes){const k=t.iniciais||"?";const c=carOf(t.placa);const r=+t.rodado||0;const kml=+c?.kmPorLitro||0;if(r&&!kml)semConsumo=true;
+    by[k]=by[k]||{pes:0,ceac:0,lPes:0,lCeac:0};const L=kml?r/kml:0;if(t.pessoal){by[k].pes+=r;by[k].lPes+=L}else{by[k].ceac+=r;by[k].lCeac+=L}}
+  const rows=Object.entries(by).sort((a,b)=>b[1].pes-a[1].pes);
+  const R=l=>preco&&l?money.format(l*preco):"—";
+  $("#cadResumo").innerHTML=rows.length?`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Quem</th><th class="num">Km pessoal</th><th class="num">R$ pessoal</th><th class="num">Km CEAC</th><th class="num">R$ CEAC</th></tr></thead><tbody>${rows.map(([k,v])=>`<tr><td><b>${esc(k)}</b></td><td class="num">${nf.format(v.pes)}</td><td class="num"><b>${R(v.lPes)}</b></td><td class="num">${nf.format(v.ceac)}</td><td class="num">${R(v.lCeac)}</td></tr>`).join("")}</tbody></table></div>`:`<div class="sub">Nenhum uso anotado neste mês.</div>`;
+  $("#cadHint").textContent=[!preco&&"Cadastre o preço do litro em Carros → Regras da rotina pra ver em reais.",semConsumo&&"Algum carro está sem consumo (km por litro); cadastre em Carros → editar dados.","Estimativa: km rodados ÷ km por litro do carro × preço do litro."].filter(Boolean).join(" ");
+  $("#cadCount").textContent=doMes.length+" "+(doMes.length===1?"uso":"usos");
+  $("#cadLista").innerHTML=doMes.length?doMes.map(t=>`<div class="line"><span class="d">${br(t.data)}</span><span class="k">${esc(carName(t.placa))} · ${esc(t.iniciais)}</span><span class="x">${esc(t.pessoal?"Uso pessoal":t.objetivo||"CEAC")}<small>${nf.format(t.km)} km no painel${t.rodado!=null?" · rodou "+nf.format(t.rodado)+" km":""}</small></span><span class="a"><button class="link" type="button" data-rmtrip="${esc(t._path)}">apagar</button></span></div>`).join(""):`<div class="sub">Nada anotado neste mês.</div>`;
+  const base=location.href.replace(/[^/]*$/,"")+"caderno.html";
+  $("#cadConfig").innerHTML=`<div class="secthead"><h3>Caderno no celular</h3></div>
+    <p class="sub" style="margin:0">Quem usa o carro abre o link (ou lê o QR colado no carro), digita o código uma vez e anota. Sem login.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end"><label>Código do caderno<input id="cadCode" inputmode="numeric" maxlength="8" value="${esc(cadCfg?.codigo||"")}" placeholder="4 números" style="width:160px"></label><button class="btn" type="button" id="cadCodeSave">${cadCfg?.codigo?"Trocar código":"Definir código"}</button></div>
+    <p class="hint" style="margin:0">Ao trocar o código, quem estiver com o código velho precisa digitar o novo.</p>
+    <p style="margin:0">Link: <a href="${esc(base)}" target="_blank" rel="noopener">${esc(base)}</a></p>
+    <div class="qrs">${cars.map(c=>`<div class="qr"><img alt="QR do caderno do ${esc(c.modelo)}" src="${qrData(base+"?carro="+c.placa)}"><b>${esc(c.modelo)}</b><span style="font-size:12px">${esc(c.placa)} · caderno</span></div>`).join("")}</div>
+    <p class="hint" style="margin:0">Pra imprimir os QR codes: abra esta aba no computador e use Imprimir (Cmd+P).</p>`;
+}
+function qrData(text){try{const q=qrcode(0,"M");q.addData(text);q.make();return q.createDataURL(4,2)}catch{return""}}
+function startTrips(){
+  if(tripsUnsub)return;
+  tripsUnsub=db.group("viagens").onSnapshot(s=>{trips=s.docs.map(d=>({...d.data(),_path:d.path}));syncKm();render()},e=>console.warn("viagens",e));
+  cadUnsub=db.doc("privado/caderno").onSnapshot(s=>{cadCfg=s.exists?s.data():null;render()},()=>{});
+}
+function stopTrips(){if(tripsUnsub){tripsUnsub();tripsUnsub=null}if(cadUnsub){cadUnsub();cadUnsub=null}trips=[]}
+async function syncKm(){for(const c of cars){let m=0;for(const t of trips)if(t.placa===c.placa&&+t.km>m)m=+t.km;if(m>(+c.kmAtual||0)&&kmSynced[c.placa]!==m){kmSynced[c.placa]=m;try{await db.doc("carros/"+c.placa).update({kmAtual:m,kmAtualEm:isoToday()})}catch(e){console.warn(e)}}}}
+document.addEventListener("change",e=>{if(e.target.id==="cadMes")renderCaderno()});
+document.addEventListener("click",async e=>{
+  if(e.target.closest("#cadCodeSave")){const v=$("#cadCode").value.trim();if(!/^\d{4,8}$/.test(v))return toast("Use de 4 a 8 números.");
+    try{await db.doc("privado/caderno/codigos/"+v).set({criadoEm:new Date().toISOString()});const old=cadCfg?.codigo;await db.doc("privado/caderno").set({codigo:v,atualizadoEm:new Date().toISOString()});if(old&&old!==v)await db.doc("privado/caderno/codigos/"+old).delete();toast("Código do caderno salvo")}catch(err){fail(err)}return}
+  const rm=e.target.closest("[data-rmtrip]");if(rm){if(rm.dataset.confirm!=="1"){rm.dataset.confirm="1";rm.textContent="toque de novo pra apagar";setTimeout(()=>{rm.dataset.confirm="";rm.textContent="apagar"},4000);return}
+    try{await db.doc(rm.dataset.rmtrip).delete();toast("Uso apagado")}catch(err){fail(err)}return}
+  const et=e.target.closest("[data-etapa]");if(et){const[k,id]=et.dataset.etapa.split("|");openEtapa(k,id)}
+});
+
 /* ---------- carro ---------- */
 const dlgC=$("#dlgCarro");
-const carFields={cModelo:"modelo",cPlaca:"placa",cProp:"proprietario",cRenavam:"renavam",cAno:"ano",cCor:"cor",cDrive:"drive",cRespLav:"respLavagem",cRespCal:"respCalibragem",cRespAgua:"respAgua",cLicAno:"licAno",cIpva:"ipva",cSeg:"seguro",cSegInfo:"seguroInfo",cOleoKm:"oleoKm",cOleoData:"oleoData",cObs:"obs"};
+const carFields={cModelo:"modelo",cPlaca:"placa",cProp:"proprietario",cRenavam:"renavam",cAno:"ano",cCor:"cor",cDrive:"drive",cRespLav:"respLavagem",cRespCal:"respCalibragem",cRespAgua:"respAgua",cLicAno:"licAno",cIpva:"ipva",cSeg:"seguro",cSegInfo:"seguroInfo",cOleoKm:"oleoKm",cRevKm:"revisaoKm",cKmL:"kmPorLitro",cOleoData:"oleoData",cObs:"obs"};
 function openCar(p){if(!db)return;editingCar=carOf(p);$("#carTitle").textContent=`${editingCar.modelo} · ${editingCar.placa}`;for(const[id,k]of Object.entries(carFields))$("#"+id).value=editingCar[k]??"";$("#cPlaca").readOnly=true;dlgC.showModal()}
 $("#cCancel").addEventListener("click",()=>dlgC.close());
 $("#formCarro").addEventListener("submit",async ev=>{ev.preventDefault();const body={};
-  for(const[id,k]of Object.entries(carFields)){if(k==="placa")continue;let v=$("#"+id).value.trim();if(k==="oleoKm"||k==="licAno")v=v?Number(v):"";body[k]=v===""?null:v}
+  for(const[id,k]of Object.entries(carFields)){if(k==="placa")continue;let v=$("#"+id).value.trim();if(k==="oleoKm"||k==="licAno"||k==="revisaoKm"||k==="kmPorLitro")v=v?Number(v):"";body[k]=v===""?null:v}
   try{await db.doc("carros/"+editingCar.placa).update(body);dlgC.close();toast("Dados salvos")}catch(e){fail(e)}});
 
 /* ---------- regras ---------- */
 const dlgR=$("#dlgRegras");
 $("#rCancel").addEventListener("click",()=>dlgR.close());
 $("#formRegras").addEventListener("submit",async ev=>{ev.preventDefault();
-  const r={lavagem:+$("#rLav").value,calibragem:+$("#rCal").value,agua:+$("#rAgua").value,oleoKm:+$("#rOleo").value,aviso:+$("#rAviso").value};
+  const r={lavagem:+$("#rLav").value,calibragem:+$("#rCal").value,agua:+$("#rAgua").value,oleoKm:+$("#rOleo").value,revisaoKm:+$("#rRev").value,aviso:+$("#rAviso").value,aprovador:$("#rAprov").value.trim()||"Renato",precoLitro:$("#rPreco").value?+$("#rPreco").value:null};
   try{await db.doc("config/regras").set(r);dlgR.close();toast("Regras salvas")}catch(e){fail(e)}});
 
 /* ---------- arquivos ---------- */
@@ -793,7 +934,7 @@ $("#docInput").addEventListener("change",async e=>{const f=e.target.files[0];e.t
 /* ---------- cliques ---------- */
 document.addEventListener("click",async e=>{
   const t=e.target.closest("[data-opencar],[data-closecar],[data-carsub],[data-newpendcar],[data-agendar],[data-act],[data-pick],[data-pickall],[data-rmreg],[data-editev],[data-done],[data-editcar],[data-hist],[data-tabgo],[data-adddoc],[data-rmdoc],[data-rmev],#btnRegras");if(!t)return;const d=t.dataset;
-  if(t.id==="btnRegras"){$("#rLav").value=rules.lavagem;$("#rCal").value=rules.calibragem;$("#rAgua").value=rules.agua;$("#rOleo").value=rules.oleoKm;$("#rAviso").value=rules.aviso;dlgR.showModal();return}
+  if(t.id==="btnRegras"){$("#rLav").value=rules.lavagem;$("#rCal").value=rules.calibragem;$("#rAgua").value=rules.agua;$("#rOleo").value=rules.oleoKm;$("#rAviso").value=rules.aviso;$("#rRev").value=rules.revisaoKm;$("#rAprov").value=rules.aprovador||"Renato";$("#rPreco").value=rules.precoLitro??"";dlgR.showModal();return}
   if(d.act){chooseAct(d.act);return}
   if(d.pick){regSel.has(d.pick)?regSel.delete(d.pick):regSel.add(d.pick);renderRegCars();const r=ROUTINE.find(x=>x[0]===regAct);if(r&&regSel.size===1&&!$("#regResp").value){const c=carOf([...regSel][0]);if(c?.[r[2]])$("#regResp").value=c[r[2]]}return}
   if("pickall" in d){if(regSel.size===cars.length)regSel.clear();else cars.forEach(c=>regSel.add(c.placa));renderRegCars();return}
@@ -831,7 +972,7 @@ function renderAuth(){
 }
 document.addEventListener("click",e=>{if(e.target.closest("#btnLogin"))signIn();if(e.target.closest("#btnLogout")){signOut(auth);gTok=null;try{sessionStorage.removeItem("frota-gtok")}catch{}}});
 let unsubPessoas=null;
-function setEditor(v){isEditor=v;assets=v?DRIVE:null;mcp=v?CAL:null;renderAuth();render();if(regAct)chooseAct(regAct)}
+function setEditor(v){if(v)startTrips();else stopTrips();isEditor=v;assets=v?DRIVE:null;mcp=v?CAL:null;renderAuth();render();if(regAct)chooseAct(regAct)}
 onAuthStateChanged(auth,u=>{
   fbUser=u;if(unsubPessoas){unsubPessoas();unsubPessoas=null}
   if(!u){setEditor(false);return}

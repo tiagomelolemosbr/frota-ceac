@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Caderno CEAC</title>
+<meta name="description" content="Anote cada uso do carro do CEAC.">
+<meta name="theme-color" content="#a32226">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Caderno CEAC">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Poppins:wght@500;600;700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&family=JetBrains+Mono:wght@700&display=swap">
+<style>
+/* Layout: uma coluna estreita, feita pro polegar — marca CEAC no topo, um passo por vez, botões grandes */
+html,body{margin:0}[hidden]{display:none!important}
+:root{
+  --bg:#f4f3f3; --surface:#ffffff; --ink:#1d1718; --muted:#6a6062; --line:#e2dcdc; --line-strong:#cfc6c7;
+  --brand:#a32226; --brand-ink:#ffffff; --brand-soft:#f8e3e3; --plate:#0b3a8c;
+  --ok:#23683f; --ok-bg:#def1e5; --warn:#8a5a00; --warn-bg:#fcecc6; --bad:#b0181b; --bad-bg:#fde0de;
+  --f-mark:"Archivo Black","Arial Black",Impact,sans-serif;
+  --f-head:"Poppins",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-body:"Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141011; --surface:#1d1718; --ink:#f1eaea; --muted:#ab9fa1; --line:#33292a; --line-strong:#463a3c;
+  --brand:#e5585b; --brand-ink:#1b0a0b; --brand-soft:#3a1d1e; --plate:#2f66c9;
+  --ok:#82d5a3; --ok-bg:#183a27; --warn:#f2c460; --warn-bg:#3f300e; --bad:#ff8f87; --bad-bg:#4a1d1b;
+  color-scheme:dark}}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:520px;margin:0 auto;padding-block:18px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+.top{display:flex;align-items:center;gap:12px}
+.mark{font-family:var(--f-mark);font-size:30px;line-height:.9;color:var(--brand);text-shadow:2px 2px 0 var(--bg),3px 3px 0 var(--brand)}
+.top b{font-family:var(--f-head);font-weight:700;font-size:18px;display:block;line-height:1.1}
+.top span{font-size:13px;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:16px}
+h1{font-family:var(--f-head);font-size:22px;font-weight:700;margin:0;line-height:1.2;text-wrap:balance}
+.label{font-family:var(--f-head);font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+label{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:15px}
+input,select{font:inherit;font-size:19px;color:var(--ink);background:var(--surface);border:1.5px solid var(--line-strong);border-radius:12px;padding:13px 14px;width:100%;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.big{font-family:var(--f-mono);font-size:28px;letter-spacing:.04em;text-align:center}
+button{font:inherit;cursor:pointer}
+.btn{border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:12px;padding:14px 16px;font-family:var(--f-head);font-weight:600;font-size:17px;width:100%}
+.btn.brand{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.btn:disabled{opacity:.55}
+.link{background:none;border:0;color:var(--brand);font-family:var(--f-head);font-weight:600;font-size:14px;text-decoration:underline;text-underline-offset:3px;padding:4px 0}
+.cars{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.carbtn{display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:14px;padding:14px}
+.carbtn b{font-family:var(--f-head);font-size:17px}
+.carbtn[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft)}
+.plate{display:inline-flex;flex-direction:column;border:2px solid #111;border-radius:5px;overflow:hidden;background:#fff;line-height:1}
+.plate .strip{background:var(--plate);color:#fff;font-size:6px;font-weight:700;letter-spacing:.14em;text-align:center;padding:2px 5px;font-family:var(--f-body)}
+.plate .num{font-family:var(--f-mono);font-weight:700;font-size:13px;color:#111;padding:3px 7px;letter-spacing:.05em}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg button{border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:12px;padding:14px 10px;font-family:var(--f-head);font-weight:600;font-size:16px}
+.seg button[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
+.calc{display:flex;justify-content:space-between;gap:12px;align-items:baseline;background:var(--bg);border-radius:12px;padding:12px 14px;font-size:15px}
+.calc b{font-family:var(--f-head);font-size:22px}
+.calc.bad{background:var(--bad-bg);color:var(--bad)}
+.hint{font-size:14px;color:var(--muted);margin:0}
+.err{background:var(--bad-bg);color:var(--bad);border-radius:12px;padding:12px 14px;font-weight:700;font-size:15px}
+.done{text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
+.done .ok{width:64px;height:64px;border-radius:50%;background:var(--ok-bg);color:var(--ok);display:grid;place-items:center;font-size:34px;font-weight:700}
+.sel{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.sel b{font-family:var(--f-head);font-size:20px}
+.install{border:1px dashed var(--line-strong);border-radius:14px;padding:14px;font-size:14.5px;color:var(--muted)}
+.install b{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><span class="mark" aria-label="CEAC">CEAC</span><span><b>Caderno dos carros</b><span>anote cada vez que usar o carro</span></span></header>
+
+  <!-- código -->
+  <section class="card" id="stepCode" hidden>
+    <h1>Digite o código do caderno</h1>
+    <p class="hint">É o código de 4 números que o Tiago ou o Davi passaram. Você só digita uma vez neste celular.</p>
+    <form id="formCode" style="display:flex;flex-direction:column;gap:14px">
+      <input id="code" class="big" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" aria-label="Código do caderno" required>
+      <div class="err" id="codeErr" hidden>Código não confere. Confira com o Tiago ou o Davi.</div>
+      <button class="btn brand" type="submit" id="codeBtn">Entrar</button>
+    </form>
+  </section>
+
+  <!-- registro -->
+  <section class="card" id="stepForm" hidden>
+    <div id="carPick">
+      <h1 style="margin-bottom:12px">Qual carro você usou?</h1>
+      <div class="cars" id="cars"><p class="hint">Carregando os carros…</p></div>
+    </div>
+    <form id="formTrip" style="display:flex;flex-direction:column;gap:16px" hidden>
+      <div class="sel"><span><span class="label">Carro</span><br><b id="carName"></b></span><button class="link" type="button" id="changeCar">trocar carro</button></div>
+      <label>Data<input type="date" id="data" required></label>
+      <label>Suas iniciais<input id="ini" maxlength="6" autocapitalize="characters" autocomplete="off" placeholder="ex.: TM" required style="text-transform:uppercase"></label>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-weight:700;font-size:15px">Pra quê?</span>
+        <div class="seg"><button type="button" data-obj="pessoal" aria-pressed="false">Uso pessoal</button><button type="button" data-obj="ceac" aria-pressed="false">Pelo CEAC</button></div>
+        <input id="obj" maxlength="80" placeholder="Qual atividade? ex.: levar material" hidden>
+      </div>
+      <label>Km no painel agora<input id="km" class="big" type="number" inputmode="numeric" min="0" required placeholder="ex.: 84210"></label>
+      <div class="calc" id="calc" hidden></div>
+      <p class="hint" id="last"></p>
+      <div class="err" id="tripErr" hidden></div>
+      <button class="btn brand" type="submit" id="saveBtn">Anotar</button>
+    </form>
+  </section>
+
+  <!-- pronto -->
+  <section class="card done" id="stepDone" hidden>
+    <div class="ok" aria-hidden="true">✓</div>
+    <h1 id="doneTitle">Anotado!</h1>
+    <p class="hint" id="doneText"></p>
+    <button class="btn brand" type="button" id="again">Anotar outro uso</button>
+  </section>
+
+  <div class="install" id="install">
+    <b>Deixe na tela do celular:</b> no iPhone, toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>. No Android, toque nos <b>três pontinhos</b> e em <b>Adicionar à tela inicial</b>.
+  </div>
+  <p class="hint" style="text-align:center"><button class="link" type="button" id="forget">sair deste celular</button></p>
+</div>
+
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getFirestore,collection,doc,getDocs,query,where,limit,setDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const app=initializeApp({apiKey:"AIzaSyBU5oSbfioSnDQgkvJoq5pE9NHQRRp8T-g",authDomain:"frota-ceac.firebaseapp.com",projectId:"frota-ceac",storageBucket:"frota-ceac.firebasestorage.app",messagingSenderId:"1077001594650",appId:"1:1077001594650:web:b5c0931935270c89856ea3"});
+const db=getFirestore(app);
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const nf=new Intl.NumberFormat("pt-BR");
+const store={get:k=>{try{return localStorage.getItem(k)}catch{return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch{}},del:k=>{try{localStorage.removeItem(k)}catch{}}};
+function isoToday(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+const br=iso=>iso?iso.split("-").reverse().join("/"):"";
+const plate=p=>`<span class="plate"><span class="strip">BRASIL</span><span class="num">${esc(p)}</span></span>`;
+if(matchMedia("(display-mode: standalone)").matches||navigator.standalone)$("#install").hidden=true;
+
+let code=store.get("caderno-codigo"),cars=[],car=null,lastKm=null,lastTrip=null,obj=null;
+const params=new URLSearchParams(location.search);
+const show=id=>["#stepCode","#stepForm","#stepDone"].forEach(s=>$(s).hidden=s!==id);
+const tripsCol=c=>collection(db,"caderno",c,"viagens");
+
+async function checkCode(c){try{await getDocs(query(tripsCol(c),limit(1)));return true}catch(e){return false}}
+
+$("#formCode").addEventListener("submit",async e=>{
+  e.preventDefault();const c=$("#code").value.trim();$("#codeErr").hidden=true;$("#codeBtn").disabled=true;
+  if(await checkCode(c)){code=c;store.set("caderno-codigo",c);startForm()}else $("#codeErr").hidden=false;
+  $("#codeBtn").disabled=false;
+});
+
+async function loadCars(){
+  const s=await getDocs(collection(db,"carros"));
+  cars=s.docs.map(d=>d.data()).sort((a,b)=>(a.ordem||99)-(b.ordem||99));
+  $("#cars").innerHTML=cars.map(c=>`<button class="carbtn" type="button" data-car="${esc(c.placa)}" aria-pressed="false"><b>${esc(c.modelo)}</b>${plate(c.placa)}</button>`).join("");
+}
+async function pickCar(p){
+  car=cars.find(c=>c.placa===p);if(!car)return;store.set("caderno-carro",p);
+  $("#carPick").hidden=true;$("#formTrip").hidden=false;$("#carName").textContent=car.modelo+" · "+car.placa;
+  lastKm=car.kmAtual||null;lastTrip=null;$("#last").textContent="Buscando o último km anotado…";
+  try{const s=await getDocs(query(tripsCol(code),where("placa","==",p)));
+    s.docs.forEach(d=>{const t=d.data();if(+t.km>(lastKm||0)){lastKm=+t.km;lastTrip=t}});
+  }catch(e){}
+  $("#last").textContent=lastKm?`Último km anotado: ${nf.format(lastKm)}${lastTrip?` em ${br(lastTrip.data)} (${lastTrip.iniciais})`:""}.`:"Ainda não tem km anotado deste carro. O km rodado aparece a partir do próximo registro.";
+  calc();
+}
+function calc(){
+  const km=+$("#km").value,el=$("#calc");
+  if(!km||!lastKm){el.hidden=true;return}
+  const d=km-lastKm;el.hidden=false;el.className="calc"+(d<0?" bad":"");
+  el.innerHTML=d<0?`<span>O km ficou menor que o último anotado (${nf.format(lastKm)}). Confira o painel.</span>`:`<span>Você rodou</span><b>${nf.format(d)} km</b>`;
+}
+$("#km").addEventListener("input",calc);
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-car]");if(b){pickCar(b.dataset.car);return}
+  const o=e.target.closest("[data-obj]");if(o){obj=o.dataset.obj;document.querySelectorAll("[data-obj]").forEach(x=>x.setAttribute("aria-pressed",x===o));$("#obj").hidden=obj!=="ceac";if(obj==="ceac")$("#obj").focus();return}
+});
+$("#changeCar").addEventListener("click",()=>{$("#formTrip").hidden=true;$("#carPick").hidden=false});
+$("#ini").addEventListener("input",e=>{e.target.value=e.target.value.toUpperCase()});
+
+$("#formTrip").addEventListener("submit",async e=>{
+  e.preventDefault();const err=$("#tripErr");err.hidden=true;
+  const ini=$("#ini").value.trim().toUpperCase(),km=Math.round(+$("#km").value),data=$("#data").value;
+  if(!obj){err.textContent="Escolha se foi uso pessoal ou pelo CEAC.";err.hidden=false;return}
+  if(obj==="ceac"&&!$("#obj").value.trim()){err.textContent="Diga rapidinho qual foi a atividade.";err.hidden=false;return}
+  if(lastKm&&km<lastKm){err.textContent=`O km (${nf.format(km)}) está menor que o último anotado (${nf.format(lastKm)}). Confira o número do painel.`;err.hidden=false;return}
+  const rodado=lastKm?km-lastKm:null;
+  const body={placa:car.placa,data,iniciais:ini,pessoal:obj==="pessoal",objetivo:obj==="pessoal"?ini:$("#obj").value.trim(),km,kmAnterior:lastKm,rodado,criadoEm:new Date().toISOString()};
+  $("#saveBtn").disabled=true;$("#saveBtn").textContent="Anotando…";
+  try{
+    await setDoc(doc(tripsCol(code)),body);
+    store.set("caderno-ini",ini);
+    $("#doneTitle").textContent="Anotado!";
+    $("#doneText").textContent=`${car.modelo}, ${br(data)}, ${nf.format(km)} km${rodado!=null?` · rodou ${nf.format(rodado)} km`:""}.`;
+    show("#stepDone");
+  }catch(ex){
+    if(ex?.code==="permission-denied"){store.del("caderno-codigo");err.textContent="O código do caderno mudou. Digite o código novo.";err.hidden=false;setTimeout(()=>{show("#stepCode")},1800)}
+    else{err.textContent="Não deu pra anotar agora. Confira a internet e tente de novo.";err.hidden=false}
+  }finally{$("#saveBtn").disabled=false;$("#saveBtn").textContent="Anotar"}
+});
+$("#again").addEventListener("click",()=>{$("#km").value="";obj=null;document.querySelectorAll("[data-obj]").forEach(x=>x.setAttribute("aria-pressed","false"));$("#obj").value="";$("#obj").hidden=true;$("#calc").hidden=true;show("#stepForm");pickCar(car.placa)});
+$("#forget").addEventListener("click",()=>{store.del("caderno-codigo");store.del("caderno-ini");store.del("caderno-carro");code=null;show("#stepCode")});
+
+async function startForm(){
+  show("#stepForm");$("#data").value=isoToday();$("#ini").value=store.get("caderno-ini")||"";
+  try{await loadCars()}catch{$("#cars").innerHTML=`<p class="err">Não deu pra carregar os carros. Confira a internet.</p>`;return}
+  const p=params.get("carro")||store.get("caderno-carro");
+  if(p&&cars.some(c=>c.placa===p))pickCar(p);
+}
+(async()=>{
+  if(code&&await checkCode(code)){store.set("caderno-codigo",code);startForm()}else{store.del("caderno-codigo");show("#stepCode")}
+})();
+</script>
+</body>
+</html>
