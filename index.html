@@ -176,6 +176,10 @@ table.hist{border-collapse:collapse;width:100%;font-size:15px;min-width:920px}
 .authbox b{color:var(--ink)}
 body.ro .tab[data-tab="registrar"],body.ro .tab[data-tab="caderno"],body.ro [data-etapa],body.ro [data-rmtrip],body.ro [data-done],body.ro [data-editev],body.ro [data-agendar],body.ro [data-editcar],body.ro [data-adddoc],body.ro [data-rmdoc],body.ro [data-newpend],body.ro [data-newpendcar],body.ro #btnRegras,body.ro .calk{display:none!important}
 /* etapas do orçamento */
+.line.has-steps .stepsrow{grid-column:2/-1}
+.line.has-steps .a{grid-column:1/-1;justify-self:end}
+.line .a .link{white-space:nowrap}
+@media (max-width:640px){.line.has-steps .stepsrow{grid-column:1/-1}}
 .steps{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 4px}
 .steps span{font-family:var(--f-head);font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--sunk);color:var(--muted)}
 .steps span.on{background:var(--ok-bg);color:var(--ok)}
@@ -614,8 +618,9 @@ function lineDone(e,{withCar}={}){
 const ORC_CATS=["Revisão","Mecânica","Pneus","Estética"];
 const ETAPAS=[["orcar","Fazer orçamento"],["orcado","Orçamento feito"],["aguardando","Aguardando aprovação"],["aprovado","Aprovado"]];
 const etapaOf=e=>e.etapa||(ORC_CATS.includes(e.categoria)?"orcar":null);
-function stepper(e){const et=etapaOf(e);if(!et)return"";const i=ETAPAS.findIndex(x=>x[0]===et);
-  return `<span class="steps">${ETAPAS.slice(1).map(([k,l],j)=>`<span class="${j+1<=i?"on":""}${j+1===i?" cur":""}">${l}</span>`).join("")}<span>Feito</span></span>`}
+function stepper(e){const et=etapaOf(e);if(!et)return"";const i=ETAPAS.findIndex(x=>x[0]===et),ap=rules.aprovador||"Renato";
+  const L=["Orçamento",`Enviar pro ${ap}`,`Aprovação do ${ap}`,"Serviço feito"];
+  return `<span class="steps">${L.map((l,j)=>`<span class="${j<i?"on":j===i?"cur":""}">${j<i?"✓ ":""}${esc(l)}</span>`).join("")}</span>`}
 function nextStep(e){const et=etapaOf(e),ap=rules.aprovador||"Renato";
   if(et==="orcar")return `<button class="btn small brand" type="button" data-etapa="orcar|${esc(e._id)}">Registrar orçamento</button>`;
   if(et==="orcado")return `<button class="btn small brand" type="button" data-etapa="enviar|${esc(e._id)}">Enviei pro ${esc(ap)}</button>`;
@@ -628,9 +633,9 @@ function stageInfo(e){const o=e.orcamento,a=e.aprovacao,out=[];
 function linePend(e,{withCar}={}){
   const late=e.agendado&&daysBetween(isoToday(),e.agendado)<0;
   const when=e.agendado?`<span class="when">${late?"era pra ":""}${br(e.agendado)}${e.hora?" "+e.hora:""}</span>`:"";
-  return `<div class="line st-${late?"bad":"warn"}"><span class="d">${e.agendado?when:"desde "+brs(e.data)}</span><span class="k">${esc(withCar?carName(e.placa)+" · "+e.categoria:e.categoria)}</span>
+  return `<div class="line st-${late?"bad":"warn"}${etapaOf(e)?" has-steps":""}"><span class="d">${e.agendado?when:"desde "+brs(e.data)}</span><span class="k">${esc(withCar?carName(e.placa)+" · "+e.categoria:e.categoria)}</span>
     <span class="x">${esc(e.descricao||"—")}<small>${esc([e.atribuido?"Responsável: "+e.atribuido:"Sem responsável",e.local].filter(Boolean).join(" · "))}${e.agendado?` · ${e.agendaEnviada?"na agenda ✓":`<a class="calk" href="${esc(calLink(e))}" target="_blank" rel="noopener">pôr na agenda</a>`}`:""}</small></span>
-    ${etapaOf(e)?`<span class="x" style="grid-column:1/-1">${stepper(e)}${stageInfo(e)?`<small>${esc(stageInfo(e))}${(e.orcamento?.anexos||[]).map(a=>` · <a href="${esc(blobUrl(a))}" target="_blank" rel="noopener">${esc(a.nome)}</a>`).join("")}</small>`:""}</span>`:""}
+    ${etapaOf(e)?`<span class="x stepsrow">${stepper(e)}${stageInfo(e)?`<small>${esc(stageInfo(e))}${(e.orcamento?.anexos||[]).map(a=>` · <a href="${esc(blobUrl(a))}" target="_blank" rel="noopener">${esc(a.nome)}</a>`).join("")}</small>`:""}</span>`:""}
     <span class="a">${nextStep(e)}${etapaOf(e)&&etapaOf(e)!=="aprovado"?`<button class="link" type="button" data-done="${esc(e._id)}">já foi feito</button>`:""}<button class="link" type="button" data-editev="${esc(e._id)}">editar</button></span></div>`;
 }
 function lineStatus(label,s,c){
