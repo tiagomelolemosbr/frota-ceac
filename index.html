@@ -53,6 +53,16 @@ h3{font-family:var(--f-head);font-size:18px;font-weight:600}
 .stat{display:flex;align-items:baseline;gap:6px}
 .stat b{font-family:var(--f-head);font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
 .stat span{font-size:14px;color:var(--muted)}
+/* estatísticas do caderno: cartõezinhos, fechado por padrão */
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.kpi{background:var(--sunk);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.kpi span{font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-family:var(--f-head);font-weight:600}
+.kpi b{font-family:var(--f-head);font-size:20px;line-height:1.2;font-weight:700}
+.kpi small{color:var(--muted);font-size:13.5px}
+.rank{display:flex;flex-direction:column;gap:6px}
+.rank div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;font-size:14.5px}
+.rank i{display:block;height:6px;border-radius:3px;background:var(--brand);margin-top:3px}
+.rank .num{font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
 .stat.bad b{color:var(--bad)} .stat.warn b{color:var(--warn)}
 .tabs{display:flex;gap:4px;overflow-x:auto;margin-inline:-4px}
 .tab{border:0;background:none;color:var(--muted);padding:10px 14px 12px;font-family:var(--f-head);font-size:15px;font-weight:600;border-bottom:3px solid transparent;white-space:nowrap;cursor:pointer}
@@ -368,6 +378,7 @@ a{color:var(--brand)}
         <div id="cadResumo"></div>
         <div class="secthead" style="margin-top:14px"><h3>Por carro</h3><span class="sub">quanto cada carro rodou e gastou no mês</span></div>
         <div id="cadCarros"></div>
+        <div id="cadStats" style="margin-top:14px"></div>
         <p class="hint" style="margin:0" id="cadHint"></p>
       </div>
       <div class="panel">
@@ -920,6 +931,7 @@ function renderCaderno(){
   $("#cadCount").innerHTML=`${doMes.length} ${doMes.length===1?"uso":"usos"} · <button class="link" type="button" id="cadCsv">baixar planilha geral</button>`;
   const byCar={};for(const t of doMes){const c=byCar[t.placa]=byCar[t.placa]||{n:0,pes:0,ceac:0,L:0};const r=+t.rodado||0,kml=+carOf(t.placa)?.kmPorLitro||0;c.n++;if(t.pessoal)c.pes+=r;else c.ceac+=r;if(kml)c.L+=r/kml}
   const carRows=cars.filter(c=>byCar[c.placa]);
+  $("#cadStats").innerHTML=cadStats(doMes);
   $("#cadCarros").innerHTML=carRows.length?`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Carro</th><th class="num">Usos</th><th class="num">Km pessoal</th><th class="num">Km CEAC</th><th class="num">Km total</th><th class="num">Litros</th><th class="num">R$ estimado</th><th></th></tr></thead><tbody>${carRows.map(c=>{const v=byCar[c.placa];return `<tr><td><b>${esc(c.modelo)}</b></td><td class="num">${v.n}</td><td class="num">${nf.format(v.pes)}</td><td class="num">${nf.format(v.ceac)}</td><td class="num">${nf.format(v.pes+v.ceac)}</td><td class="num">${v.L?nf.format(Math.round(v.L*10)/10):"—"}</td><td class="num"><b>${R(v.L)}</b></td><td class="num"><button class="link" type="button" data-cadcsv="${esc(c.placa)}">baixar planilha</button></td></tr>`}).join("")}</tbody></table></div>`:`<div class="sub">Nenhum uso anotado neste mês.</div>`;
   const incs=trips.filter(t=>t.incidente&&!t.incidenteVisto).sort((a,b)=>(b.criadoEm||"").localeCompare(a.criadoEm||""));
   $("#cadInc").hidden=!incs.length;
@@ -943,6 +955,37 @@ function startTrips(){
   if(isEditor&&!leitoresUnsub)leitoresUnsub=db.doc("privado/acessos").onSnapshot(s=>{leitores=s.exists&&Array.isArray(s.data().leitores)?s.data().leitores:[];render()},()=>{});
 }
 function stopTrips(){if(tripsUnsub){tripsUnsub();tripsUnsub=null}if(leitoresUnsub){leitoresUnsub();leitoresUnsub=null}trips=[]}
+/* estatísticas do mês: quem mais usou, carro mais usado, motivo mais comum. Abre num clique, fechado por padrão */
+function cadStats(doMes){
+  if(!doMes.length)return fold("cad-stats",`<span class="nm"><b>Estatísticas do mês</b><span>nada anotado ainda</span></span>`,`<div class="sub">Quando tiver uso anotado, aparece aqui.</div>`);
+  const count=(arr,key,val)=>{const m={};for(const t of arr){const k=key(t);if(!k)continue;m[k]=(m[k]||0)+(val?val(t):1)}return Object.entries(m).sort((a,b)=>b[1]-a[1])};
+  const kmTot=doMes.reduce((a,t)=>a+(+t.rodado||0),0),pes=doMes.filter(t=>t.pessoal),ceac=doMes.filter(t=>!t.pessoal);
+  const kmPes=pes.reduce((a,t)=>a+(+t.rodado||0),0),kmCeac=ceac.reduce((a,t)=>a+(+t.rodado||0),0);
+  const porPessoaUsos=count(doMes,t=>t.iniciais),porPessoaKm=count(doMes,t=>t.iniciais,t=>+t.rodado||0);
+  const porCarro=count(doMes,t=>carName(t.placa)),porCarroKm=count(doMes,t=>carName(t.placa),t=>+t.rodado||0);
+  const motivos=count(ceac,t=>(t.objetivo||"").trim().toLowerCase().replace(/\s+/g," "));
+  const maior=[...doMes].sort((a,b)=>(+b.rodado||0)-(+a.rodado||0))[0];
+  const inc=doMes.filter(t=>t.incidente).length,conf=doMes.filter(t=>t.kmConferir).length;
+  const cap=s=>s?s[0].toUpperCase()+s.slice(1):"";
+  const rank=(list,unit,max)=>`<div class="rank">${list.slice(0,5).map(([k,v])=>`<div><span>${esc(cap(k))}<i style="width:${Math.max(4,Math.round(v/(list[0][1]||1)*100))}%"></i></span><span class="num">${nf.format(Math.round(v))} ${unit==="vezes"&&Math.round(v)===1?"vez":unit==="usos"&&Math.round(v)===1?"uso":unit}</span></div>`).join("")}</div>`;
+  const kpi=(l,v,sm)=>`<div class="kpi"><span>${l}</span><b>${v}</b>${sm?`<small>${sm}</small>`:""}</div>`;
+  const body=`<div class="kpis">
+    ${kpi("Quem mais usou",esc(porPessoaUsos[0][0]),`${porPessoaUsos[0][1]} ${porPessoaUsos[0][1]===1?"uso":"usos"}`)}
+    ${kpi("Quem mais rodou",esc(porPessoaKm[0][0]),nf.format(porPessoaKm[0][1])+" km")}
+    ${kpi("Carro mais usado",esc(porCarro[0][0]),`${porCarro[0][1]} ${porCarro[0][1]===1?"uso":"usos"} · ${nf.format(porCarroKm.find(x=>x[0]===porCarro[0][0])?.[1]||0)} km`)}
+    ${kpi("Motivo mais comum",motivos.length?esc(cap(motivos[0][0])):"—",motivos.length?`${motivos[0][1]} ${motivos[0][1]===1?"vez":"vezes"} (uso pelo CEAC)`:"nenhum uso pelo CEAC")}
+    ${kpi("Km rodados no mês",nf.format(kmTot),`${doMes.length} ${doMes.length===1?"uso":"usos"} · média ${nf.format(Math.round(kmTot/doMes.length))} km por uso`)}
+    ${kpi("Pessoal × CEAC",kmTot?`${Math.round(kmPes/kmTot*100)}% × ${Math.round(kmCeac/kmTot*100)}%`:"—",`${nf.format(kmPes)} km pessoal · ${nf.format(kmCeac)} km CEAC`)}
+    ${kpi("Maior uso",maior&&+maior.rodado?nf.format(+maior.rodado)+" km":"—",maior&&+maior.rodado?`${esc(carName(maior.placa))} · ${esc(maior.iniciais)} · ${br(maior.data)}`:"")}
+    ${kpi("Incidentes",String(inc),conf?`${conf} ${conf===1?"km pra conferir":"kms pra conferir"}`:"")}
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-top:14px">
+    <div><div class="secthead"><h3>Por pessoa (km)</h3></div>${rank(porPessoaKm,"km")}</div>
+    <div><div class="secthead"><h3>Por carro (usos)</h3></div>${rank(porCarro,"usos")}</div>
+    ${motivos.length?`<div><div class="secthead"><h3>Motivos (uso pelo CEAC)</h3></div>${rank(motivos,"vezes")}</div>`:""}
+  </div>`;
+  return fold("cad-stats",`<span class="nm"><b>Estatísticas do mês</b><span>quem mais usou, carro e motivo mais comuns</span></span>`,body);
+}
 /* planilha do mês (geral ou de um carro): uma linha por uso, com litros e R$ estimados pelo consumo do carro e preço do litro */
 function tripsCsv(placa){
   const mes=$("#cadMes").value||monthNow(),preco=+rules.precoLitro||0;
