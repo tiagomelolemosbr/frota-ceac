@@ -175,7 +175,9 @@ table.hist{border-collapse:collapse;width:100%;font-size:15px;min-width:920px}
 .authbox{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
 .authbox b{color:var(--ink)}
 body.ro .tab[data-tab="registrar"],body.ro .tab[data-tab="caderno"],body.ro [data-etapa],body.ro [data-rmtrip],body.ro [data-done],body.ro [data-editev],body.ro [data-agendar],body.ro [data-editcar],body.ro [data-adddoc],body.ro [data-rmdoc],body.ro [data-newpend],body.ro [data-newpendcar],body.ro #btnRegras,body.ro .calk{display:none!important}
+body.leitor .tab{display:none!important}
 body.leitor .tab[data-tab="caderno"]{display:inline-block!important}
+body.leitor #stats,body.leitor #recentWrap{display:none!important}
 body.leitor [data-rmtrip],body.leitor [data-incpend],body.leitor [data-incvisto],body.leitor #cadConfig{display:none!important}
 .tabs{position:relative}
 @media (max-width:640px){.tabs::after{content:"";position:absolute;right:0;top:0;bottom:0;width:36px;background:linear-gradient(to right,transparent,var(--surface));pointer-events:none}}
@@ -827,7 +829,7 @@ function renderCars(){
 }
 
 /* ---------- abas ---------- */
-function showTab(n){if(n==="carros"&&typeof carView!=="undefined"&&document.querySelector('.tab[data-tab="carros"][aria-selected="true"]')){carView=null;renderCars()}document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===n));["registrar","carros","pessoas","pendencias","fila","historico","documentos","caderno","situacao"].forEach(k=>$("#tab-"+k).hidden=k!==n);try{localStorage.setItem("frota-tab3",n)}catch{}}
+function showTab(n){if(isLeitor&&!isEditor)n="caderno";if(n==="carros"&&typeof carView!=="undefined"&&document.querySelector('.tab[data-tab="carros"][aria-selected="true"]')){carView=null;renderCars()}document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===n));["registrar","carros","pessoas","pendencias","fila","historico","documentos","caderno","situacao"].forEach(k=>$("#tab-"+k).hidden=k!==n);try{localStorage.setItem("frota-tab3",n)}catch{}}
 document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>showTab(t.dataset.tab)));
 try{const s=localStorage.getItem("frota-tab3");if(s&&$("#tab-"+s))showTab(s)}catch{}
 $("#fCat").innerHTML=`<option value="">Todos</option>`+CATS.map(c=>`<option>${c}</option>`).join("");
