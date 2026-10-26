@@ -65,6 +65,11 @@ button{font:inherit;cursor:pointer}
 .calc b{font-family:var(--f-head);font-size:22px}
 .calc.warn{background:var(--warn-bg);color:var(--warn)}
 .calc.bad{background:var(--bad-bg);color:var(--bad)}
+.lastbox{display:flex;justify-content:space-between;gap:12px;align-items:center;background:var(--bg);border:1.5px dashed var(--line-strong);border-radius:12px;padding:12px 14px}
+.lastbox .label{display:block}
+.lastbox b{font-family:var(--f-mono);font-size:24px}
+.lastbox small{display:block;color:var(--muted);font-size:13.5px}
+.carbtn small{color:var(--muted);font-size:13px}
 .hint{font-size:14px;color:var(--muted);margin:0}
 .err{background:var(--bad-bg);color:var(--bad);border-radius:12px;padding:12px 14px;font-weight:700;font-size:15px}
 .done{text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
@@ -100,8 +105,8 @@ textarea{font-size:17px;resize:vertical;min-height:84px}
         <div class="seg"><button type="button" data-obj="pessoal" aria-pressed="false">Uso pessoal</button><button type="button" data-obj="ceac" aria-pressed="false">Pelo CEAC</button></div>
         <input id="obj" maxlength="80" placeholder="Qual atividade? ex.: levar material" hidden>
       </div>
+      <div class="lastbox" id="last"></div>
       <label>Km no painel agora<input id="km" class="big" type="number" inputmode="numeric" min="0" required placeholder="ex.: 84210"></label>
-      <p class="hint" id="last"></p>
       <div class="calc" id="calc" hidden></div>
       <label><span>Observação <span class="opt">(opcional)</span></span><textarea id="obs" maxlength="500" rows="2" placeholder="ex.: deixei na garagem do CEAC, tanque na metade"></textarea></label>
       <div class="inc" id="incBox">
@@ -129,7 +134,7 @@ textarea{font-size:17px;resize:vertical;min-height:84px}
 
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {getFirestore,collection,doc,getDoc,getDocs,writeBatch} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore,collection,doc,getDocs,writeBatch} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 const app=initializeApp({apiKey:"AIzaSyBU5oSbfioSnDQgkvJoq5pE9NHQRRp8T-g",authDomain:"frota-ceac.firebaseapp.com",projectId:"frota-ceac",storageBucket:"frota-ceac.firebasestorage.app",messagingSenderId:"1077001594650",appId:"1:1077001594650:web:b5c0931935270c89856ea3"});
 const db=getFirestore(app);
 const $=s=>document.querySelector(s);
@@ -143,21 +148,25 @@ if(matchMedia("(display-mode: standalone)").matches||navigator.standalone)$("#in
 
 /* sem código: quem tem o link anota. O último km de cada carro fica público em ultimoKm/{placa} (só km, data e iniciais) */
 const SALTO=3000; // mais que isso num uso só pede confirmação
-let cars=[],car=null,lastKm=null,lastInfo=null,obj=null,inc=false,confirmado=false;
+let cars=[],ultimos={},car=null,lastKm=null,obj=null,inc=false,confirmado=false;
 const params=new URLSearchParams(location.search);
 const show=id=>["#stepForm","#stepDone"].forEach(s=>$(s).hidden=s!==id);
 
 async function loadCars(){
   const s=await getDocs(collection(db,"carros"));
   cars=s.docs.map(d=>d.data()).sort((a,b)=>(a.ordem||99)-(b.ordem||99));
-  $("#cars").innerHTML=cars.map(c=>`<button class="carbtn" type="button" data-car="${esc(c.placa)}" aria-pressed="false"><b>${esc(c.modelo)}</b>${plate(c.placa)}</button>`).join("");
+  // último km de cada carro: o maior entre o cadastro, o último uso anotado e os serviços com km
+  for(const c of cars)if(+c.kmAtual)ultimos[c.placa]={km:+c.kmAtual,data:c.kmAtualEm||""};
+  const up=(p,u)=>{if(+u.km&&+u.km>=(ultimos[p]?.km||0))ultimos[p]={...u,km:+u.km}};
+  try{(await getDocs(collection(db,"eventos"))).docs.forEach(d=>{const e=d.data();if(+e.km)up(e.placa,{km:e.km,data:e.data,fonte:e.categoria})})}catch(e){}
+  try{(await getDocs(collection(db,"ultimoKm"))).docs.forEach(d=>up(d.id,d.data()))}catch(e){}
+  $("#cars").innerHTML=cars.map(c=>`<button class="carbtn" type="button" data-car="${esc(c.placa)}" aria-pressed="false"><b>${esc(c.modelo)}</b>${plate(c.placa)}<small>${ultimos[c.placa]?"último: "+nf.format(ultimos[c.placa].km)+" km":"sem km anotado"}</small></button>`).join("");
 }
 async function pickCar(p){
   car=cars.find(c=>c.placa===p);if(!car)return;store.set("caderno-carro",p);
   $("#carPick").hidden=true;$("#formTrip").hidden=false;$("#carName").textContent=car.modelo+" · "+car.placa;
-  lastKm=+car.kmAtual||null;lastInfo=car.kmAtualEm?{data:car.kmAtualEm}:null;$("#last").textContent="Buscando o último km anotado…";
-  try{const u=await getDoc(doc(db,"ultimoKm",p));if(u.exists()&&+u.data().km>=(lastKm||0)){lastKm=+u.data().km;lastInfo=u.data()}}catch(e){}
-  $("#last").innerHTML=lastKm?`Último km anotado: <b>${nf.format(lastKm)}</b>${lastInfo?.data?` em ${br(lastInfo.data)}`:""}${lastInfo?.iniciais?` (${esc(lastInfo.iniciais)})`:""}.`:"Ainda não tem km anotado deste carro. O km rodado aparece a partir do próximo registro.";
+  const u=ultimos[p];lastKm=u?.km||null;
+  $("#last").innerHTML=lastKm?`<span><span class="label">Último km registrado</span><small>${[u.data&&br(u.data),u.iniciais,u.fonte&&"no serviço de "+u.fonte.toLowerCase()].filter(Boolean).map(esc).join(" · ")}</small></span><b>${nf.format(lastKm)}</b>`:`<span><span class="label">Último km registrado</span><small>Ainda nenhum. O seu vai ser o primeiro; o km rodado aparece a partir do próximo.</small></span>`;
   calc();
 }
 function calc(){
@@ -200,7 +209,7 @@ $("#formTrip").addEventListener("submit",async e=>{
   }catch(ex){say("Não deu pra anotar agora. Confira a internet e tente de novo.")}
   finally{$("#saveBtn").disabled=false;$("#saveBtn").textContent="Anotar"}
 });
-$("#again").addEventListener("click",()=>{$("#km").value="";$("#obs").value="";$("#inc").value="";setInc(false);obj=null;document.querySelectorAll("[data-obj]").forEach(x=>x.setAttribute("aria-pressed","false"));$("#obj").value="";$("#obj").hidden=true;$("#calc").hidden=true;show("#stepForm");pickCar(car.placa)});
+$("#again").addEventListener("click",()=>{if(car&&+$("#km").value>=(lastKm||0))ultimos[car.placa]={km:Math.round(+$("#km").value),data:$("#data").value,iniciais:$("#ini").value.trim().toUpperCase()};$("#km").value="";$("#obs").value="";$("#inc").value="";setInc(false);obj=null;document.querySelectorAll("[data-obj]").forEach(x=>x.setAttribute("aria-pressed","false"));$("#obj").value="";$("#obj").hidden=true;$("#calc").hidden=true;show("#stepForm");pickCar(car.placa)});
 
 (async()=>{
   store.del("caderno-codigo");
