@@ -13,110 +13,148 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Poppins:wght@500;600;700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&family=JetBrains+Mono:wght@700&display=swap">
 <style>
-/* Layout: uma coluna estreita, feita pro polegar — marca CEAC no topo, um passo por vez, botões grandes */
+/* Layout: feito pro polegar. Uma pergunta por tela (carro → km → quem/pra quê), botão grande fixo embaixo,
+   nada de duas colunas em tela estreita. Padrão dos apps de celular que já fizemos: uma pergunta ou um número por tela. */
 html,body{margin:0}[hidden]{display:none!important}
 :root{
-  --bg:#f4f3f3; --surface:#ffffff; --ink:#1d1718; --muted:#6a6062; --line:#e2dcdc; --line-strong:#cfc6c7;
+  --bg:#f4f3f3; --surface:#ffffff; --ink:#1d1718; --muted:#6a6062; --line:#e2dcdc; --line-strong:#cfc6c7; --sunk:#ebe7e7;
   --brand:#a32226; --brand-ink:#ffffff; --brand-soft:#f8e3e3; --plate:#0b3a8c;
   --ok:#23683f; --ok-bg:#def1e5; --warn:#8a5a00; --warn-bg:#fcecc6; --bad:#b0181b; --bad-bg:#fde0de;
   --f-mark:"Archivo Black","Arial Black",Impact,sans-serif;
   --f-head:"Poppins",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-body:"Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
-  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#141011; --surface:#1d1718; --ink:#f1eaea; --muted:#ab9fa1; --line:#33292a; --line-strong:#463a3c;
+  --bg:#141011; --surface:#1d1718; --ink:#f1eaea; --muted:#ab9fa1; --line:#33292a; --line-strong:#463a3c; --sunk:#241c1d;
   --brand:#e5585b; --brand-ink:#1b0a0b; --brand-soft:#3a1d1e; --plate:#2f66c9;
   --ok:#82d5a3; --ok-bg:#183a27; --warn:#f2c460; --warn-bg:#3f300e; --bad:#ff8f87; --bad-bg:#4a1d1b;
   color-scheme:dark}}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.45;-webkit-tap-highlight-color:transparent}
-.wrap{max-width:520px;margin:0 auto;padding-block:18px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
-.top{display:flex;align-items:center;gap:12px}
-.mark{font-family:var(--f-mark);font-size:30px;line-height:.9;color:var(--brand);text-shadow:2px 2px 0 var(--bg),3px 3px 0 var(--brand)}
-.top b{font-family:var(--f-head);font-weight:700;font-size:18px;display:block;line-height:1.1}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.45;-webkit-tap-highlight-color:transparent;min-height:100dvh;display:flex;flex-direction:column}
+.wrap{width:100%;max-width:520px;margin:0 auto;padding:calc(12px + var(--sat)) max(16px,env(safe-area-inset-left,0px)) 0 max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px;flex:1}
+/* topo: marca + progresso */
+.top{display:flex;align-items:center;gap:12px;min-height:44px}
+.mark{font-family:var(--f-mark);font-size:26px;line-height:1;color:var(--brand);letter-spacing:-.02em}
+.top .t{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.top b{font-family:var(--f-head);font-weight:700;font-size:16px}
 .top span{font-size:13px;color:var(--muted)}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:16px}
-h1{font-family:var(--f-head);font-size:22px;font-weight:700;margin:0;line-height:1.2;text-wrap:balance}
+.steps{margin-left:auto;display:flex;gap:5px}
+.steps i{width:22px;height:5px;border-radius:3px;background:var(--line-strong)}
+.steps i.on{background:var(--brand)}
+/* cartão */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 18px;display:flex;flex-direction:column;gap:16px}
+h1{font-family:var(--f-head);font-size:23px;font-weight:700;margin:0;line-height:1.2;text-wrap:balance}
 .label{font-family:var(--f-head);font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 label{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:15px}
-input,select,textarea{font:inherit;font-size:19px;color:var(--ink);background:var(--surface);border:1.5px solid var(--line-strong);border-radius:12px;padding:13px 14px;width:100%;min-width:0}
-input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
-.big{font-family:var(--f-mono);font-size:28px;letter-spacing:.04em;text-align:center}
-button{font:inherit;cursor:pointer}
-.btn{border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:12px;padding:14px 16px;font-family:var(--f-head);font-weight:600;font-size:17px;width:100%}
+.opt{font-weight:400;color:var(--muted);font-size:13px}
+input,textarea{font:inherit;font-size:18px;color:var(--ink);background:var(--surface);border:1.5px solid var(--line-strong);border-radius:14px;padding:14px;width:100%;min-width:0;min-height:54px}
+textarea{resize:none;line-height:1.4}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.big{font-family:var(--f-mono);font-size:30px;letter-spacing:.04em;text-align:center;min-height:68px}
+button{font:inherit;cursor:pointer;touch-action:manipulation}
+.btn{border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:14px;padding:15px 16px;font-family:var(--f-head);font-weight:600;font-size:17px;width:100%;min-height:54px}
 .btn.brand{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
 .btn:disabled{opacity:.55}
-.link{background:none;border:0;color:var(--brand);font-family:var(--f-head);font-weight:600;font-size:14px;text-decoration:underline;text-underline-offset:3px;padding:4px 0}
-.cars{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.carbtn{display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:14px;padding:14px}
-.carbtn b{font-family:var(--f-head);font-size:17px}
-.carbtn[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft)}
+.btn:active:not(:disabled){transform:scale(.985)}
+.link{background:none;border:0;color:var(--brand);font-family:var(--f-head);font-weight:600;font-size:15px;text-decoration:underline;text-underline-offset:3px;padding:10px 0;min-height:44px}
+/* lista de carros: uma linha por carro, placa à direita */
+.cars{display:flex;flex-direction:column;gap:10px}
+.carbtn{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 12px;text-align:left;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:14px;padding:14px 16px;min-height:72px}
+.carbtn b{font-family:var(--f-head);font-size:19px;line-height:1.15}
+.carbtn small{color:var(--muted);font-size:13.5px;grid-column:1}
+.carbtn .plate{grid-column:2;grid-row:1/3}
 .plate{display:inline-flex;flex-direction:column;border:2px solid #111;border-radius:5px;overflow:hidden;background:#fff;line-height:1}
 .plate .strip{background:var(--plate);color:#fff;font-size:6px;font-weight:700;letter-spacing:.14em;text-align:center;padding:2px 5px;font-family:var(--f-body)}
 .plate .num{font-family:var(--f-mono);font-weight:700;font-size:13px;color:#111;padding:3px 7px;letter-spacing:.05em}
-.seg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.seg button{border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:12px;padding:14px 10px;font-family:var(--f-head);font-weight:600;font-size:16px}
-.seg button[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
-.calc{display:flex;justify-content:space-between;gap:12px;align-items:baseline;background:var(--bg);border-radius:12px;padding:12px 14px;font-size:15px}
-.calc b{font-family:var(--f-head);font-size:22px}
+/* carro escolhido */
+.sel{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.sel .who{display:flex;flex-direction:column;min-width:0}
+.sel b{font-family:var(--f-head);font-size:19px;line-height:1.2}
+/* último km + rodado */
+.lastbox{display:flex;justify-content:space-between;gap:12px;align-items:center;background:var(--sunk);border-radius:14px;padding:12px 14px}
+.lastbox .label{display:block}
+.lastbox b{font-family:var(--f-mono);font-size:24px;white-space:nowrap}
+.lastbox small{display:block;color:var(--muted);font-size:13.5px}
+.calc{display:flex;justify-content:space-between;gap:12px;align-items:baseline;background:var(--ok-bg);color:var(--ok);border-radius:14px;padding:12px 14px;font-size:15px}
+.calc b{font-family:var(--f-head);font-size:22px;white-space:nowrap}
 .calc.warn{background:var(--warn-bg);color:var(--warn)}
 .calc.bad{background:var(--bad-bg);color:var(--bad)}
-.lastbox{display:flex;justify-content:space-between;gap:12px;align-items:center;background:var(--bg);border:1.5px dashed var(--line-strong);border-radius:12px;padding:12px 14px}
-.lastbox .label{display:block}
-.lastbox b{font-family:var(--f-mono);font-size:24px}
-.lastbox small{display:block;color:var(--muted);font-size:13.5px}
-.carbtn small{color:var(--muted);font-size:13px}
-.hint{font-size:14px;color:var(--muted);margin:0}
-.err{background:var(--bad-bg);color:var(--bad);border-radius:12px;padding:12px 14px;font-weight:700;font-size:15px}
-.done{text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
-.done .ok{width:64px;height:64px;border-radius:50%;background:var(--ok-bg);color:var(--ok);display:grid;place-items:center;font-size:34px;font-weight:700}
-.sel{display:flex;align-items:center;gap:10px;justify-content:space-between}
-.sel b{font-family:var(--f-head);font-size:20px}
-textarea{font-size:17px;resize:vertical;min-height:84px}
-.opt{font-weight:400;color:var(--muted);font-size:13px}
+/* escolhas de dois lados */
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg button{border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:14px;padding:14px 8px;font-family:var(--f-head);font-weight:600;font-size:16px;min-height:54px}
+.seg button[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
+.seg button.bad[aria-pressed="true"]{border-color:var(--bad);background:var(--bad-bg);color:var(--bad)}
 .inc{display:flex;flex-direction:column;gap:10px;border:1.5px solid var(--line-strong);border-radius:14px;padding:14px}
-.inc.on{border-color:var(--bad);background:var(--bad-bg)}
-.seg button.bad[aria-pressed="true"]{border-color:var(--bad);background:var(--surface);color:var(--bad)}
-.install{border:1px dashed var(--line-strong);border-radius:14px;padding:14px;font-size:14.5px;color:var(--muted)}
+.inc.on{border-color:var(--bad)}
+.q{font-weight:700;font-size:15px}
+.hint{font-size:14px;color:var(--muted);margin:0}
+.err{background:var(--bad-bg);color:var(--bad);border-radius:14px;padding:12px 14px;font-weight:700;font-size:15px}
+/* resumo do que vai ser anotado */
+.sum{display:flex;flex-direction:column;gap:6px;background:var(--sunk);border-radius:14px;padding:12px 14px;font-size:15px}
+.sum div{display:flex;justify-content:space-between;gap:12px}
+.sum span{color:var(--muted)}
+.sum b{text-align:right}
+/* pronto */
+.done{text-align:center;align-items:center}
+.done .ok{width:72px;height:72px;border-radius:50%;background:var(--ok-bg);color:var(--ok);display:grid;place-items:center;font-size:38px;font-weight:700}
+/* barra fixa embaixo com o botão principal */
+.bar{position:sticky;bottom:0;margin-top:auto;background:linear-gradient(to top,var(--bg) 70%,transparent);padding:14px 0 calc(14px + var(--sab))}
+.bar .row{display:flex;gap:10px}
+.bar .row .btn{flex:1}
+.bar .row .btn.back{flex:0 0 auto;width:auto;padding-inline:18px}
+a.btn{display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;text-align:center}
+a.btn small{font-family:var(--f-body);font-weight:400;color:var(--muted);font-size:13.5px}
+.docs-car{display:inline-block;text-decoration:underline;padding:0;min-height:0;margin-top:-6px}
+.install{border:1px dashed var(--line-strong);border-radius:14px;padding:12px 14px;font-size:13.5px;color:var(--muted);margin-bottom:8px}
 .install b{color:var(--ink)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header class="top"><span class="mark" aria-label="CEAC">CEAC</span><span><b>Caderno dos carros</b><span>anote cada vez que usar o carro</span></span></header>
+  <header class="top"><span class="mark" aria-label="CEAC">CEAC</span><span class="t"><b>Caderno dos carros</b><span id="topSub">anote cada vez que usar</span></span><span class="steps" id="steps" aria-hidden="true"><i class="on"></i><i></i><i></i></span></header>
 
-  <!-- registro -->
-  <section class="card" id="stepForm" hidden>
-    <div id="carPick">
-      <h1 style="margin-bottom:12px">Qual carro você usou?</h1>
-      <div class="cars" id="cars"><p class="hint">Carregando os carros…</p></div>
+  <!-- 1 · carro -->
+  <section class="card" id="step1">
+    <h1>Qual carro você usou?</h1>
+    <div class="cars" id="cars"><p class="hint">Carregando os carros…</p></div>
+    <a class="btn docs" href="https://drive.google.com/drive/folders/1if2he9NANvWt16OYtuCJwh72vJOPb1cP" target="_blank" rel="noopener">📄 Documentos dos carros <small>seguro, CRLV e afins, no Drive</small></a>
+  </section>
+
+  <!-- 2 · km -->
+  <section class="card" id="step2" hidden>
+    <div class="sel"><span class="who"><span class="label">Carro</span><b id="carName"></b></span><button class="link" type="button" id="changeCar">trocar</button></div>
+    <a class="link docs-car" id="carDocs" href="#" target="_blank" rel="noopener" hidden>📄 documentos deste carro</a>
+    <h1>Qual o km no painel agora?</h1>
+    <div class="lastbox" id="last"></div>
+    <input id="km" class="big" type="number" inputmode="numeric" min="0" placeholder="ex.: 84210" aria-label="Km no painel agora" enterkeyhint="next">
+    <div class="calc" id="calc" hidden></div>
+    <label>Data do uso<input type="date" id="data" required></label>
+    <div class="err" id="err2" hidden></div>
+  </section>
+
+  <!-- 3 · quem e pra quê -->
+  <section class="card" id="step3" hidden>
+    <h1>Quem usou e pra quê?</h1>
+    <label>Suas iniciais<input id="ini" maxlength="6" autocapitalize="characters" autocomplete="off" placeholder="ex.: TM" required style="text-transform:uppercase" enterkeyhint="next"></label>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span class="q">Pra quê?</span>
+      <div class="seg"><button type="button" data-obj="pessoal" aria-pressed="false">Uso pessoal</button><button type="button" data-obj="ceac" aria-pressed="false">Pelo CEAC</button></div>
+      <input id="obj" maxlength="80" placeholder="Qual atividade? ex.: levar material" hidden>
     </div>
-    <form id="formTrip" style="display:flex;flex-direction:column;gap:16px" hidden>
-      <div class="sel"><span><span class="label">Carro</span><br><b id="carName"></b></span><button class="link" type="button" id="changeCar">trocar carro</button></div>
-      <label>Data<input type="date" id="data" required></label>
-      <label>Suas iniciais<input id="ini" maxlength="6" autocapitalize="characters" autocomplete="off" placeholder="ex.: TM" required style="text-transform:uppercase"></label>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <span style="font-weight:700;font-size:15px">Pra quê?</span>
-        <div class="seg"><button type="button" data-obj="pessoal" aria-pressed="false">Uso pessoal</button><button type="button" data-obj="ceac" aria-pressed="false">Pelo CEAC</button></div>
-        <input id="obj" maxlength="80" placeholder="Qual atividade? ex.: levar material" hidden>
-      </div>
-      <div class="lastbox" id="last"></div>
-      <label>Km no painel agora<input id="km" class="big" type="number" inputmode="numeric" min="0" required placeholder="ex.: 84210"></label>
-      <div class="calc" id="calc" hidden></div>
-      <label><span>Observação <span class="opt">(opcional)</span></span><textarea id="obs" maxlength="500" rows="2" placeholder="ex.: deixei na garagem do CEAC, tanque na metade"></textarea></label>
-      <div class="inc" id="incBox">
-        <span style="font-weight:700;font-size:15px">Aconteceu alguma coisa com o carro?</span>
-        <div class="seg"><button type="button" data-inc="nao" aria-pressed="true">Não, tudo certo</button><button type="button" class="bad" data-inc="sim" aria-pressed="false">Sim</button></div>
-        <textarea id="inc" maxlength="1000" rows="3" placeholder="Conte o que foi: batida, arranhão, pneu, barulho, luz acesa no painel… Onde e quando." hidden></textarea>
-      </div>
-      <div class="err" id="tripErr" hidden></div>
-      <button class="btn brand" type="submit" id="saveBtn">Anotar</button>
-    </form>
+    <label><span>Observação <span class="opt">(opcional)</span></span><textarea id="obs" maxlength="500" rows="2" placeholder="ex.: deixei na garagem, tanque na metade"></textarea></label>
+    <div class="inc" id="incBox">
+      <span class="q">Aconteceu alguma coisa com o carro?</span>
+      <div class="seg"><button type="button" data-inc="nao" aria-pressed="true">Não</button><button type="button" class="bad" data-inc="sim" aria-pressed="false">Sim</button></div>
+      <textarea id="inc" maxlength="1000" rows="3" placeholder="Conte o que foi: batida, arranhão, pneu, barulho, luz no painel… Onde e quando." hidden></textarea>
+    </div>
+    <div class="sum" id="sum"></div>
+    <div class="err" id="err3" hidden></div>
   </section>
 
   <!-- pronto -->
@@ -125,12 +163,11 @@ textarea{font-size:17px;resize:vertical;min-height:84px}
     <h1 id="doneTitle">Anotado!</h1>
     <p class="hint" id="doneText"></p>
     <button class="btn brand" type="button" id="again">Anotar outro uso</button>
+    <div class="install" id="install"><b>Deixe na tela do celular:</b> no iPhone, toque em Compartilhar e em "Adicionar à Tela de Início". No Android, nos três pontinhos e em "Adicionar à tela inicial".</div>
   </section>
 
-  <div class="install" id="install">
-    <b>Deixe na tela do celular:</b> no iPhone, toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>. No Android, toque nos <b>três pontinhos</b> e em <b>Adicionar à tela inicial</b>.
-  </div>
-  </div>
+  <div class="bar" id="bar" hidden><div class="row"><button class="btn back" type="button" id="back">Voltar</button><button class="btn brand" type="button" id="next">Continuar</button></div></div>
+</div>
 
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -144,78 +181,107 @@ const store={get:k=>{try{return localStorage.getItem(k)}catch{return null}},set:
 function isoToday(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 const br=iso=>iso?iso.split("-").reverse().join("/"):"";
 const plate=p=>`<span class="plate"><span class="strip">BRASIL</span><span class="num">${esc(p)}</span></span>`;
-if(matchMedia("(display-mode: standalone)").matches||navigator.standalone)$("#install").hidden=true;
 
-/* sem código: quem tem o link anota. O último km de cada carro fica público em ultimoKm/{placa} (só km, data e iniciais) */
+/* sem código: quem tem o link anota. O último km de cada carro é o maior entre o cadastro, os serviços com km e o último uso anotado */
 const SALTO=3000; // mais que isso num uso só pede confirmação
-let cars=[],ultimos={},car=null,lastKm=null,obj=null,inc=false,confirmado=false;
+let cars=[],ultimos={},car=null,lastKm=null,obj=null,inc=false,confirmado=false,step=1;
 const params=new URLSearchParams(location.search);
-const show=id=>["#stepForm","#stepDone"].forEach(s=>$(s).hidden=s!==id);
+const say=(id,t)=>{const e=$(id);e.textContent=t;e.hidden=false};
+const clear=()=>{$("#err2").hidden=true;$("#err3").hidden=true};
 
+function go(n){
+  step=n;clear();
+  ["#step1","#step2","#step3","#stepDone"].forEach((s,i)=>$(s).hidden=(i+1)!==n);
+  $("#bar").hidden=n===1||n===4;
+  $("#next").textContent=n===3?"Anotar":"Continuar";
+  $("#steps").hidden=n===4;document.querySelectorAll("#steps i").forEach((el,i)=>el.classList.toggle("on",i<n));
+  $("#topSub").textContent=n===4?"anotado":`passo ${Math.min(n,3)} de 3`;
+  scrollTo({top:0});
+  if(n===2)setTimeout(()=>$("#km").focus(),50);
+  if(n===3){setTimeout(()=>{if(!$("#ini").value)$("#ini").focus()},50);summary()}
+}
 async function loadCars(){
   const s=await getDocs(collection(db,"carros"));
   cars=s.docs.map(d=>d.data()).sort((a,b)=>(a.ordem||99)-(b.ordem||99));
-  // último km de cada carro: o maior entre o cadastro, o último uso anotado e os serviços com km
   for(const c of cars)if(+c.kmAtual)ultimos[c.placa]={km:+c.kmAtual,data:c.kmAtualEm||""};
   const up=(p,u)=>{if(+u.km&&+u.km>=(ultimos[p]?.km||0))ultimos[p]={...u,km:+u.km}};
   try{(await getDocs(collection(db,"eventos"))).docs.forEach(d=>{const e=d.data();if(+e.km)up(e.placa,{km:e.km,data:e.data,fonte:e.categoria})})}catch(e){}
   try{(await getDocs(collection(db,"ultimoKm"))).docs.forEach(d=>up(d.id,d.data()))}catch(e){}
-  $("#cars").innerHTML=cars.map(c=>`<button class="carbtn" type="button" data-car="${esc(c.placa)}" aria-pressed="false"><b>${esc(c.modelo)}</b>${plate(c.placa)}<small>${ultimos[c.placa]?"último: "+nf.format(ultimos[c.placa].km)+" km":"sem km anotado"}</small></button>`).join("");
+  $("#cars").innerHTML=cars.map(c=>`<button class="carbtn" type="button" data-car="${esc(c.placa)}"><b>${esc(c.modelo)}</b><small>${ultimos[c.placa]?"último km: "+nf.format(ultimos[c.placa].km):"sem km anotado ainda"}</small>${plate(c.placa)}</button>`).join("");
 }
-async function pickCar(p){
+function pickCar(p){
   car=cars.find(c=>c.placa===p);if(!car)return;store.set("caderno-carro",p);
-  $("#carPick").hidden=true;$("#formTrip").hidden=false;$("#carName").textContent=car.modelo+" · "+car.placa;
+  $("#carName").textContent=car.modelo+" · "+car.placa;
+  $("#carDocs").hidden=!car.drive;if(car.drive)$("#carDocs").href=car.drive;
   const u=ultimos[p];lastKm=u?.km||null;
   $("#last").innerHTML=lastKm?`<span><span class="label">Último km registrado</span><small>${[u.data&&br(u.data),u.iniciais,u.fonte&&"no serviço de "+u.fonte.toLowerCase()].filter(Boolean).map(esc).join(" · ")}</small></span><b>${nf.format(lastKm)}</b>`:`<span><span class="label">Último km registrado</span><small>Ainda nenhum. O seu vai ser o primeiro; o km rodado aparece a partir do próximo.</small></span>`;
-  calc();
+  calc();go(2);
 }
 function calc(){
   const km=+$("#km").value,el=$("#calc");confirmado=false;
   if(!km||!lastKm){el.hidden=true;return}
   const d=km-lastKm;el.hidden=false;el.className="calc"+(d<0?" bad":d>SALTO?" warn":"");
-  el.innerHTML=d<0?`<span>O km ficou menor que o último anotado (${nf.format(lastKm)}). Confira o painel.</span>`:`<span>Você rodou${d>SALTO?" (confira, é bastante)":""}</span><b>${nf.format(d)} km</b>`;
+  el.innerHTML=d<0?`<span>Ficou menor que o último anotado (${nf.format(lastKm)}). Confira o painel.</span>`:`<span>Você rodou${d>SALTO?" (confira, é bastante)":""}</span><b>${nf.format(d)} km</b>`;
 }
+function summary(){
+  const km=Math.round(+$("#km").value),rod=lastKm&&km>=lastKm?km-lastKm:null;
+  $("#sum").innerHTML=`<div><span>Carro</span><b>${esc(car.modelo)}</b></div><div><span>Data</span><b>${br($("#data").value)}</b></div><div><span>Km no painel</span><b>${nf.format(km)}</b></div>${rod!=null?`<div><span>Rodou</span><b>${nf.format(rod)} km</b></div>`:""}`;
+}
+function setInc(on){inc=on;document.querySelectorAll("[data-inc]").forEach(x=>x.setAttribute("aria-pressed",(x.dataset.inc==="sim")===on));$("#inc").hidden=!on;$("#incBox").classList.toggle("on",on)}
+
 $("#km").addEventListener("input",calc);
+$("#km").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("#next").click()}});
+$("#ini").addEventListener("input",e=>{e.target.value=e.target.value.toUpperCase()});
+$("#changeCar").addEventListener("click",()=>go(1));
+$("#back").addEventListener("click",()=>go(step-1));
+$("#again").addEventListener("click",()=>go(1));
 document.addEventListener("click",e=>{
   const b=e.target.closest("[data-car]");if(b){pickCar(b.dataset.car);return}
   const o=e.target.closest("[data-obj]");if(o){obj=o.dataset.obj;document.querySelectorAll("[data-obj]").forEach(x=>x.setAttribute("aria-pressed",x===o));$("#obj").hidden=obj!=="ceac";if(obj==="ceac")$("#obj").focus();return}
   const i=e.target.closest("[data-inc]");if(i){setInc(i.dataset.inc==="sim");if(inc)$("#inc").focus();return}
 });
-function setInc(on){inc=on;document.querySelectorAll("[data-inc]").forEach(x=>x.setAttribute("aria-pressed",(x.dataset.inc==="sim")===on));$("#inc").hidden=!on;$("#incBox").classList.toggle("on",on)}
-$("#changeCar").addEventListener("click",()=>{$("#formTrip").hidden=true;$("#carPick").hidden=false});
-$("#ini").addEventListener("input",e=>{e.target.value=e.target.value.toUpperCase()});
 
-$("#formTrip").addEventListener("submit",async e=>{
-  e.preventDefault();const err=$("#tripErr");err.hidden=true;
+$("#next").addEventListener("click",async()=>{
+  clear();
+  if(step===2){
+    const km=Math.round(+$("#km").value);
+    if(!km)return say("#err2","Digite o km que está no painel do carro.");
+    if(!$("#data").value)return say("#err2","Escolha a data do uso.");
+    const baixo=lastKm&&km<lastKm,salto=lastKm&&km-lastKm>SALTO;
+    if((baixo||salto)&&!confirmado){confirmado=true;return say("#err2",baixo?`O km (${nf.format(km)}) está menor que o último anotado (${nf.format(lastKm)}). Confira o número do painel. Se estiver certo mesmo, toque em Continuar de novo.`:`Deu ${nf.format(km-lastKm)} km desde o último registro. Confira o número do painel. Se estiver certo mesmo, toque em Continuar de novo.`)}
+    go(3);return;
+  }
+  if(step===3)await save();
+});
+
+async function save(){
   const ini=$("#ini").value.trim().toUpperCase(),km=Math.round(+$("#km").value),data=$("#data").value,obs=$("#obs").value.trim(),incTxt=$("#inc").value.trim();
-  const say=t=>{err.textContent=t;err.hidden=false};
-  if(!obj)return say("Escolha se foi uso pessoal ou pelo CEAC.");
-  if(obj==="ceac"&&!$("#obj").value.trim())return say("Diga rapidinho qual foi a atividade.");
-  if(inc&&!incTxt)return say("Conte o que aconteceu com o carro, ou marque “Não, tudo certo”.");
-  const baixo=lastKm&&km<lastKm,salto=lastKm&&km-lastKm>SALTO;
-  if((baixo||salto)&&!confirmado){confirmado=true;return say(baixo?`O km (${nf.format(km)}) está menor que o último anotado (${nf.format(lastKm)}). Confira o número do painel. Se estiver certo mesmo, toque em Anotar de novo.`:`Deu ${nf.format(km-lastKm)} km rodados desde o último registro. Confira o número do painel. Se estiver certo mesmo, toque em Anotar de novo.`)}
-  const rodado=lastKm&&!baixo?km-lastKm:null;
+  if(!ini)return say("#err3","Coloque as suas iniciais.");
+  if(!obj)return say("#err3","Escolha se foi uso pessoal ou pelo CEAC.");
+  if(obj==="ceac"&&!$("#obj").value.trim())return say("#err3","Diga rapidinho qual foi a atividade.");
+  if(inc&&!incTxt)return say("#err3","Conte o que aconteceu com o carro, ou marque “Não”.");
+  const baixo=lastKm&&km<lastKm,salto=lastKm&&km-lastKm>SALTO,rodado=lastKm&&!baixo?km-lastKm:null;
   const body={placa:car.placa,data,iniciais:ini,pessoal:obj==="pessoal",objetivo:obj==="pessoal"?ini:$("#obj").value.trim(),km,kmAnterior:lastKm,rodado,criadoEm:new Date().toISOString()};
   if(obs)body.obs=obs;if(inc)body.incidente=incTxt;if(baixo||salto)body.kmConferir=true;
-  $("#saveBtn").disabled=true;$("#saveBtn").textContent="Anotando…";
+  $("#next").disabled=true;$("#next").textContent="Anotando…";
   try{
     const b=writeBatch(db);b.set(doc(collection(db,"viagens")),body);
     if(!baixo)b.set(doc(db,"ultimoKm",car.placa),{km,data,iniciais:ini,criadoEm:body.criadoEm});
     await b.commit();
-    store.set("caderno-ini",ini);
-    $("#doneTitle").textContent="Anotado!";
+    store.set("caderno-ini",ini);if(!baixo)ultimos[car.placa]={km,data,iniciais:ini};
     $("#doneText").textContent=`${car.modelo}, ${br(data)}, ${nf.format(km)} km${rodado!=null?` · rodou ${nf.format(rodado)} km`:""}.${inc?" O incidente já foi pro painel do Tiago e do Davi.":""}`;
-    show("#stepDone");
-  }catch(ex){say("Não deu pra anotar agora. Confira a internet e tente de novo.")}
-  finally{$("#saveBtn").disabled=false;$("#saveBtn").textContent="Anotar"}
-});
-$("#again").addEventListener("click",()=>{if(car&&+$("#km").value>=(lastKm||0))ultimos[car.placa]={km:Math.round(+$("#km").value),data:$("#data").value,iniciais:$("#ini").value.trim().toUpperCase()};$("#km").value="";$("#obs").value="";$("#inc").value="";setInc(false);obj=null;document.querySelectorAll("[data-obj]").forEach(x=>x.setAttribute("aria-pressed","false"));$("#obj").value="";$("#obj").hidden=true;$("#calc").hidden=true;show("#stepForm");pickCar(car.placa)});
+    $("#km").value="";$("#obs").value="";$("#inc").value="";setInc(false);obj=null;document.querySelectorAll("[data-obj]").forEach(x=>x.setAttribute("aria-pressed","false"));$("#obj").value="";$("#obj").hidden=true;$("#calc").hidden=true;
+    go(4);
+  }catch(ex){say("#err3","Não deu pra anotar agora. Confira a internet e tente de novo.")}
+  finally{$("#next").disabled=false;$("#next").textContent="Anotar"}
+}
+if(matchMedia("(display-mode: standalone)").matches||navigator.standalone)$("#install").hidden=true;
 
 (async()=>{
   store.del("caderno-codigo");
-  show("#stepForm");$("#data").value=isoToday();$("#ini").value=store.get("caderno-ini")||"";
+  $("#data").value=isoToday();$("#ini").value=store.get("caderno-ini")||"";
   try{await loadCars()}catch{$("#cars").innerHTML=`<p class="err">Não deu pra carregar os carros. Confira a internet.</p>`;return}
-  const p=params.get("carro")||store.get("caderno-carro");
+  const p=params.get("carro");
   if(p&&cars.some(c=>c.placa===p))pickCar(p);
 })();
 </script>

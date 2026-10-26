@@ -175,6 +175,10 @@ table.hist{border-collapse:collapse;width:100%;font-size:15px;min-width:920px}
 .authbox{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
 .authbox b{color:var(--ink)}
 body.ro .tab[data-tab="registrar"],body.ro .tab[data-tab="caderno"],body.ro [data-etapa],body.ro [data-rmtrip],body.ro [data-done],body.ro [data-editev],body.ro [data-agendar],body.ro [data-editcar],body.ro [data-adddoc],body.ro [data-rmdoc],body.ro [data-newpend],body.ro [data-newpendcar],body.ro #btnRegras,body.ro .calk{display:none!important}
+body.leitor .tab[data-tab="caderno"]{display:inline-block!important}
+body.leitor [data-rmtrip],body.leitor [data-incpend],body.leitor [data-incvisto],body.leitor #cadConfig{display:none!important}
+.tabs{position:relative}
+@media (max-width:640px){.tabs::after{content:"";position:absolute;right:0;top:0;bottom:0;width:36px;background:linear-gradient(to right,transparent,var(--surface));pointer-events:none}}
 /* etapas do orçamento */
 .line.has-steps .stepsrow{grid-column:2/-1}
 .line.has-steps .a{grid-column:1/-1;justify-self:end}
@@ -483,7 +487,7 @@ a{color:var(--brand)}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {getFirestore,collection,collectionGroup,doc,onSnapshot as fsSnap,setDoc,updateDoc,deleteDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore,collection,collectionGroup,doc,onSnapshot as fsSnap,setDoc,updateDoc,deleteDoc,getDocs,query,limit} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 const fbApp=initializeApp({apiKey:"AIzaSyBU5oSbfioSnDQgkvJoq5pE9NHQRRp8T-g",authDomain:"frota-ceac.firebaseapp.com",projectId:"frota-ceac",storageBucket:"frota-ceac.firebasestorage.app",messagingSenderId:"1077001594650",appId:"1:1077001594650:web:b5c0931935270c89856ea3"});
 const fsdb=getFirestore(fbApp),auth=getAuth(fbApp);
@@ -491,7 +495,7 @@ const SCOPES=["https://www.googleapis.com/auth/drive.file","https://www.googleap
 /* adaptador: mesma interface que o painel usava */
 const wrapDoc=r=>({get id(){return r.id},set:d=>setDoc(r,d),update:d=>updateDoc(r,d),delete:()=>deleteDoc(r),onSnapshot:(cb,err)=>fsSnap(r,s=>cb({id:s.id,exists:s.exists(),data:()=>s.data()}),err)});
 const FDB={group:n=>({onSnapshot:(cb,err)=>fsSnap(collectionGroup(fsdb,n),s=>cb({docs:s.docs.map(d=>({id:d.id,path:d.ref.path,exists:true,data:()=>d.data()}))}),err)}),doc:p=>wrapDoc(doc(fsdb,p)),collection:p=>{const c=collection(fsdb,p);return{doc:id=>wrapDoc(id?doc(c,id):doc(c)),onSnapshot:(cb,err)=>fsSnap(c,s=>cb({docs:s.docs.map(d=>({id:d.id,exists:true,data:()=>d.data()}))}),err)}}};
-let fbUser=null,isEditor=false,gTok=null,gTokExp=0;
+let fbUser=null,isEditor=false,isLeitor=false,leitores=[],gTok=null,gTokExp=0;
 try{const t=JSON.parse(sessionStorage.getItem("frota-gtok")||"null");if(t&&t.exp>Date.now()){gTok=t.tok;gTokExp=t.exp}}catch{}
 function googleProvider(){const p=new GoogleAuthProvider();SCOPES.forEach(s=>p.addScope(s));if(fbUser?.email)p.setCustomParameters({login_hint:fbUser.email});return p}
 function keepToken(r){const c=GoogleAuthProvider.credentialFromResult(r);if(c?.accessToken){gTok=c.accessToken;gTokExp=Date.now()+50*60e3;try{sessionStorage.setItem("frota-gtok",JSON.stringify({tok:gTok,exp:gTokExp}))}catch{}}}
@@ -898,8 +902,8 @@ $("#formEtapa").addEventListener("submit",async ev=>{
 let trips=[],tripsUnsub=null,kmSynced={};
 function monthNow(){return isoToday().slice(0,7)}
 function renderCaderno(){
-  const nInc=trips.filter(t=>t.incidente&&!t.incidenteVisto).length;$("#cadN").hidden=!nInc;$("#cadN").textContent=nInc;
-  if(!isEditor)return;
+  const nInc=trips.filter(t=>t.incidente&&!t.incidenteVisto).length;$("#cadN").hidden=!nInc||!isEditor;$("#cadN").textContent=nInc;
+  if(!isEditor&&!isLeitor)return;
   const mes=$("#cadMes").value||monthNow();if(!$("#cadMes").value)$("#cadMes").value=mes;
   const doMes=trips.filter(t=>(t.data||"").slice(0,7)===mes).sort((a,b)=>(b.data||"").localeCompare(a.data||"")||(b.km-a.km));
   const preco=+rules.precoLitro||0,by={};let semConsumo=false;
@@ -909,7 +913,7 @@ function renderCaderno(){
   const R=l=>preco&&l?money.format(l*preco):"—";
   $("#cadResumo").innerHTML=rows.length?`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Quem</th><th class="num">Km pessoal</th><th class="num">R$ pessoal</th><th class="num">Km CEAC</th><th class="num">R$ CEAC</th></tr></thead><tbody>${rows.map(([k,v])=>`<tr><td><b>${esc(k)}</b></td><td class="num">${nf.format(v.pes)}</td><td class="num"><b>${R(v.lPes)}</b></td><td class="num">${nf.format(v.ceac)}</td><td class="num">${R(v.lCeac)}</td></tr>`).join("")}</tbody></table></div>`:`<div class="sub">Nenhum uso anotado neste mês.</div>`;
   $("#cadHint").textContent=[!preco&&"Cadastre o preço do litro em Carros → Regras da rotina pra ver em reais.",semConsumo&&"Algum carro está sem consumo (km por litro); cadastre em Carros → editar dados.","Estimativa: km rodados ÷ km por litro do carro × preço do litro."].filter(Boolean).join(" ");
-  $("#cadCount").textContent=doMes.length+" "+(doMes.length===1?"uso":"usos");
+  $("#cadCount").innerHTML=`${doMes.length} ${doMes.length===1?"uso":"usos"} · <button class="link" type="button" id="cadCsv">baixar planilha</button>`;
   const incs=trips.filter(t=>t.incidente&&!t.incidenteVisto).sort((a,b)=>(b.criadoEm||"").localeCompare(a.criadoEm||""));
   $("#cadInc").hidden=!incs.length;
   $("#cadInc").innerHTML=`<div class="secthead"><h3>Incidentes novos</h3><span class="sub">${incs.length} ${incs.length===1?"aviso":"avisos"} de quem usou o carro</span></div><div class="lines">${incs.map(t=>`<div class="line st-bad"><span class="d">${br(t.data)}</span><span class="k">${esc(carName(t.placa))} · ${esc(t.iniciais)}</span><span class="x">${esc(t.incidente)}${t.obs?`<small>Obs.: ${esc(t.obs)}</small>`:""}</span><span class="a"><button class="btn small" type="button" data-incpend="${esc(t._path)}">Virar pendência</button><button class="link" type="button" data-incvisto="${esc(t._path)}">já vi</button></span></div>`).join("")}</div>`;
@@ -917,19 +921,34 @@ function renderCaderno(){
   const base=location.href.replace(/[^/]*$/,"")+"caderno.html";
   $("#cadConfig").innerHTML=`<div class="secthead"><h3>Caderno no celular</h3></div>
     <p class="sub" style="margin:0">Quem usa o carro abre o link (ou lê o QR colado no carro) e anota. Sem login e sem código: quem tem o link anota. Mande só pra quem usa os carros.</p>
+    <div class="secthead" style="margin-top:6px"><h3>Quem mais pode ver o caderno</h3></div>
+    <p class="sub" style="margin:0">Quem está nesta lista entra no painel com a conta Google e vê só a aba Caderno (os usos e a gasolina do mês), sem editar nada. Serve pra quem fecha as contas.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end"><label style="flex:1;min-width:240px">Emails, separados por vírgula<input id="cadLeitores" type="text" inputmode="email" autocomplete="off" value="${esc(leitores.join(", "))}" placeholder="ex.: patrick@gmail.com"></label><button class="btn" type="button" id="cadLeitoresSave">Salvar</button></div>
     <p style="margin:0">Link: <a href="${esc(base)}" target="_blank" rel="noopener">${esc(base)}</a></p>
     <div class="qrs">${cars.map(c=>`<div class="qr"><img alt="QR do caderno do ${esc(c.modelo)}" src="${qrData(base+"?carro="+c.placa)}"><b>${esc(c.modelo)}</b><span style="font-size:12px">${esc(c.placa)} · caderno</span></div>`).join("")}</div>
     <p class="hint" style="margin:0">Pra imprimir os QR codes: abra esta aba no computador e use Imprimir (Cmd+P).</p>`;
 }
 function qrData(text){try{const q=qrcode(0,"M");q.addData(text);q.make();return q.createDataURL(4,2)}catch{return""}}
+let leitoresUnsub=null;
 function startTrips(){
   if(tripsUnsub)return;
-  tripsUnsub=db.group("viagens").onSnapshot(s=>{trips=s.docs.map(d=>({...d.data(),_path:d.path}));syncKm();render()},e=>console.warn("viagens",e));
+  tripsUnsub=db.group("viagens").onSnapshot(s=>{trips=s.docs.map(d=>({...d.data(),_path:d.path}));if(isEditor)syncKm();render()},e=>console.warn("viagens",e));
+  if(isEditor&&!leitoresUnsub)leitoresUnsub=db.doc("privado/acessos").onSnapshot(s=>{leitores=s.exists&&Array.isArray(s.data().leitores)?s.data().leitores:[];render()},()=>{});
 }
-function stopTrips(){if(tripsUnsub){tripsUnsub();tripsUnsub=null}trips=[]}
+function stopTrips(){if(tripsUnsub){tripsUnsub();tripsUnsub=null}if(leitoresUnsub){leitoresUnsub();leitoresUnsub=null}trips=[]}
+function tripsCsv(){
+  const mes=$("#cadMes").value||monthNow(),rows=trips.filter(t=>(t.data||"").slice(0,7)===mes).sort((a,b)=>(a.data||"").localeCompare(b.data||"")||(a.km-b.km));
+  const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+  const csv=["data;carro;placa;iniciais;uso;atividade;km_painel;km_anterior;km_rodado;observacao;incidente".replace(/;/g,";"),...rows.map(t=>[br(t.data),carName(t.placa),t.placa,t.iniciais,t.pessoal?"pessoal":"CEAC",t.pessoal?"":t.objetivo,t.km,t.kmAnterior??"",t.rodado??"",t.obs||"",t.incidente||""].map(q).join(";"))].join("\r\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download=`caderno-ceac-${mes}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
 async function syncKm(){for(const c of cars){let m=0;for(const t of trips)if(t.placa===c.placa&&+t.km>m)m=+t.km;if(m>(+c.kmAtual||0)&&kmSynced[c.placa]!==m){kmSynced[c.placa]=m;try{await db.doc("carros/"+c.placa).update({kmAtual:m,kmAtualEm:isoToday()})}catch(e){console.warn(e)}}}}
 document.addEventListener("change",e=>{if(e.target.id==="cadMes")renderCaderno()});
 document.addEventListener("click",async e=>{
+  if(e.target.closest("#cadCsv")){tripsCsv();return}
+  if(e.target.closest("#cadLeitoresSave")){const v=$("#cadLeitores").value.split(/[,;\s]+/).map(x=>x.trim().toLowerCase()).filter(Boolean);
+    if(v.some(x=>!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x)))return toast("Tem um email fora do formato. Confira.");
+    try{await db.doc("privado/acessos").set({leitores:v,atualizadoEm:new Date().toISOString()});toast(v.length?"Acesso ao caderno salvo":"Lista de leitores esvaziada")}catch(err){fail(err)}return}
   const iv=e.target.closest("[data-incvisto]");if(iv){try{await db.doc(iv.dataset.incvisto).update({incidenteVisto:true});toast("Incidente marcado como visto")}catch(err){fail(err)}return}
   const ip=e.target.closest("[data-incpend]");if(ip){const t=trips.find(x=>x._path===ip.dataset.incpend);if(!t)return;
     openEvent({_new:true,placa:t.placa,categoria:"Estética",status:"Pendente",data:isoToday(),descricao:`${t.incidente} (avisado por ${t.iniciais} no caderno, ${br(t.data)})`,anexos:[]});
@@ -995,19 +1014,23 @@ function fail(e){const c=e?.code;console.warn("frota:",e);
 function renderAuth(){
   const box=$("#authbox");
   if(!fbUser)box.innerHTML=`<button class="btn small" type="button" id="btnLogin">Entrar pra editar</button>`;
-  else box.innerHTML=`<span>${isEditor?"Editando como":"Conectado como"} <b>${esc(fbUser.displayName||fbUser.email)}</b></span><button class="link" type="button" id="btnLogout">sair</button>`;
-  document.body.classList.toggle("ro",!isEditor);
+  else box.innerHTML=`<span>${isEditor?"Editando como":isLeitor?"Vendo o caderno como":"Conectado como"} <b>${esc(fbUser.displayName||fbUser.email)}</b></span><button class="link" type="button" id="btnLogout">sair</button>`;
+  document.body.classList.toggle("ro",!isEditor);document.body.classList.toggle("leitor",isLeitor&&!isEditor);
   if(!isEditor&&!$("#tab-registrar").hidden)showTab("pendencias");
+  if(!isEditor&&!isLeitor&&!$("#tab-caderno").hidden)showTab("pendencias");
 }
 document.addEventListener("click",e=>{if(e.target.closest("#btnLogin"))signIn();if(e.target.closest("#btnLogout")){signOut(auth);gTok=null;try{sessionStorage.removeItem("frota-gtok")}catch{}}});
 let unsubPessoas=null;
-function setEditor(v){if(v)startTrips();else stopTrips();isEditor=v;assets=v?DRIVE:null;mcp=v?CAL:null;renderAuth();render();if(regAct)chooseAct(regAct)}
+function setLeitor(v){isLeitor=v;if(v){startTrips();showTab("caderno")}else stopTrips();renderAuth();render()}
+function setEditor(v){isEditor=v;if(v)startTrips();else stopTrips();assets=v?DRIVE:null;mcp=v?CAL:null;renderAuth();render();if(regAct)chooseAct(regAct)}
 onAuthStateChanged(auth,u=>{
   fbUser=u;if(unsubPessoas){unsubPessoas();unsubPessoas=null}
   if(!u){setEditor(false);return}
   // quem pode ler privado/ é editor (regra do banco); assim nenhum email fica no código do site
   unsubPessoas=db.doc("privado/pessoas").onSnapshot(s=>{if(s.exists&&Array.isArray(s.data().lista))people=s.data().lista;if(!isEditor)setEditor(true);else render()},
-    ()=>{setEditor(false);toast("Esta conta pode só visualizar. Pra editar, entre com a conta do Tiago ou do Davi.")});
+    ()=>{setEditor(false);
+      // não é editor: se a regra do banco deixar ler o caderno, é leitor (lista em privado/acessos)
+      getDocs(query(collectionGroup(fsdb,"viagens"),limit(1))).then(()=>{setLeitor(true);toast("Você vê a aba Caderno. O resto do painel é só leitura.")}).catch(()=>{setLeitor(false);toast("Esta conta pode só visualizar. Pra editar, entre com a conta do Tiago ou do Davi.")})});
 });
 db=FDB;window.__frota={db:FDB,auth};
 document.body.classList.add("ro");renderAuth();render();
