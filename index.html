@@ -366,6 +366,8 @@ a{color:var(--brand)}
       <div class="panel">
         <div class="secthead"><h3>Gasolina do mês</h3><label style="flex-direction:row;align-items:center;gap:8px">Mês <input type="month" id="cadMes" style="width:auto"></label></div>
         <div id="cadResumo"></div>
+        <div class="secthead" style="margin-top:14px"><h3>Por carro</h3><span class="sub">quanto cada carro rodou e gastou no mês</span></div>
+        <div id="cadCarros"></div>
         <p class="hint" style="margin:0" id="cadHint"></p>
       </div>
       <div class="panel">
@@ -915,7 +917,10 @@ function renderCaderno(){
   const R=l=>preco&&l?money.format(l*preco):"—";
   $("#cadResumo").innerHTML=rows.length?`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Quem</th><th class="num">Km pessoal</th><th class="num">R$ pessoal</th><th class="num">Km CEAC</th><th class="num">R$ CEAC</th></tr></thead><tbody>${rows.map(([k,v])=>`<tr><td><b>${esc(k)}</b></td><td class="num">${nf.format(v.pes)}</td><td class="num"><b>${R(v.lPes)}</b></td><td class="num">${nf.format(v.ceac)}</td><td class="num">${R(v.lCeac)}</td></tr>`).join("")}</tbody></table></div>`:`<div class="sub">Nenhum uso anotado neste mês.</div>`;
   $("#cadHint").textContent=[!preco&&"Cadastre o preço do litro em Carros → Regras da rotina pra ver em reais.",semConsumo&&"Algum carro está sem consumo (km por litro); cadastre em Carros → editar dados.","Estimativa: km rodados ÷ km por litro do carro × preço do litro."].filter(Boolean).join(" ");
-  $("#cadCount").innerHTML=`${doMes.length} ${doMes.length===1?"uso":"usos"} · <button class="link" type="button" id="cadCsv">baixar planilha</button>`;
+  $("#cadCount").innerHTML=`${doMes.length} ${doMes.length===1?"uso":"usos"} · <button class="link" type="button" id="cadCsv">baixar planilha geral</button>`;
+  const byCar={};for(const t of doMes){const c=byCar[t.placa]=byCar[t.placa]||{n:0,pes:0,ceac:0,L:0};const r=+t.rodado||0,kml=+carOf(t.placa)?.kmPorLitro||0;c.n++;if(t.pessoal)c.pes+=r;else c.ceac+=r;if(kml)c.L+=r/kml}
+  const carRows=cars.filter(c=>byCar[c.placa]);
+  $("#cadCarros").innerHTML=carRows.length?`<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Carro</th><th class="num">Usos</th><th class="num">Km pessoal</th><th class="num">Km CEAC</th><th class="num">Km total</th><th class="num">Litros</th><th class="num">R$ estimado</th><th></th></tr></thead><tbody>${carRows.map(c=>{const v=byCar[c.placa];return `<tr><td><b>${esc(c.modelo)}</b></td><td class="num">${v.n}</td><td class="num">${nf.format(v.pes)}</td><td class="num">${nf.format(v.ceac)}</td><td class="num">${nf.format(v.pes+v.ceac)}</td><td class="num">${v.L?nf.format(Math.round(v.L*10)/10):"—"}</td><td class="num"><b>${R(v.L)}</b></td><td class="num"><button class="link" type="button" data-cadcsv="${esc(c.placa)}">baixar planilha</button></td></tr>`}).join("")}</tbody></table></div>`:`<div class="sub">Nenhum uso anotado neste mês.</div>`;
   const incs=trips.filter(t=>t.incidente&&!t.incidenteVisto).sort((a,b)=>(b.criadoEm||"").localeCompare(a.criadoEm||""));
   $("#cadInc").hidden=!incs.length;
   $("#cadInc").innerHTML=`<div class="secthead"><h3>Incidentes novos</h3><span class="sub">${incs.length} ${incs.length===1?"aviso":"avisos"} de quem usou o carro</span></div><div class="lines">${incs.map(t=>`<div class="line st-bad"><span class="d">${br(t.data)}</span><span class="k">${esc(carName(t.placa))} · ${esc(t.iniciais)}</span><span class="x">${esc(t.incidente)}${t.obs?`<small>Obs.: ${esc(t.obs)}</small>`:""}</span><span class="a"><button class="btn small" type="button" data-incpend="${esc(t._path)}">Virar pendência</button><button class="link" type="button" data-incvisto="${esc(t._path)}">já vi</button></span></div>`).join("")}</div>`;
@@ -938,16 +943,23 @@ function startTrips(){
   if(isEditor&&!leitoresUnsub)leitoresUnsub=db.doc("privado/acessos").onSnapshot(s=>{leitores=s.exists&&Array.isArray(s.data().leitores)?s.data().leitores:[];render()},()=>{});
 }
 function stopTrips(){if(tripsUnsub){tripsUnsub();tripsUnsub=null}if(leitoresUnsub){leitoresUnsub();leitoresUnsub=null}trips=[]}
-function tripsCsv(){
-  const mes=$("#cadMes").value||monthNow(),rows=trips.filter(t=>(t.data||"").slice(0,7)===mes).sort((a,b)=>(a.data||"").localeCompare(b.data||"")||(a.km-b.km));
-  const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
-  const csv=["data;carro;placa;iniciais;uso;atividade;km_painel;km_anterior;km_rodado;observacao;incidente".replace(/;/g,";"),...rows.map(t=>[br(t.data),carName(t.placa),t.placa,t.iniciais,t.pessoal?"pessoal":"CEAC",t.pessoal?"":t.objetivo,t.km,t.kmAnterior??"",t.rodado??"",t.obs||"",t.incidente||""].map(q).join(";"))].join("\r\n");
-  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download=`caderno-ceac-${mes}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+/* planilha do mês (geral ou de um carro): uma linha por uso, com litros e R$ estimados pelo consumo do carro e preço do litro */
+function tripsCsv(placa){
+  const mes=$("#cadMes").value||monthNow(),preco=+rules.precoLitro||0;
+  const rows=trips.filter(t=>(t.data||"").slice(0,7)===mes&&(!placa||t.placa===placa)).sort((a,b)=>(a.data||"").localeCompare(b.data||"")||carName(a.placa).localeCompare(carName(b.placa))||(a.km-b.km));
+  const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"',dec=n=>n==null||n===""?"":String(Math.round(n*100)/100).replace(".",",");
+  const lin=t=>{const kml=+carOf(t.placa)?.kmPorLitro||0,r=+t.rodado||0,L=kml?r/kml:null;return[br(t.data),carName(t.placa),t.placa,t.iniciais,t.pessoal?"pessoal":"CEAC",t.pessoal?"":t.objetivo,t.km,t.kmAnterior??"",t.rodado??"",dec(L),dec(L!=null&&preco?L*preco:null),t.obs||"",t.incidente||""]};
+  const tot=rows.reduce((a,t)=>{const kml=+carOf(t.placa)?.kmPorLitro||0,r=+t.rodado||0;a.km+=r;if(kml)a.L+=r/kml;return a},{km:0,L:0});
+  const csv=["data;carro;placa;iniciais;uso;atividade;km_painel;km_anterior;km_rodado;litros_estimados;reais_estimados;observacao;incidente",...rows.map(t=>lin(t).map(q).join(";")),
+    ["TOTAL","","","","","","","",tot.km,dec(tot.L),dec(preco?tot.L*preco:null),preco?`preço do litro: ${dec(preco)}`:"sem preço do litro cadastrado",""].map(q).join(";")].join("\r\n");
+  const nome=placa?`caderno-ceac-${mes}-${(carName(placa)||placa).toLowerCase().replace(/[^a-z0-9]+/g,"-")}.csv`:`caderno-ceac-${mes}-geral.csv`;
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download=nome;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
 }
 async function syncKm(){for(const c of cars){let m=0;for(const t of trips)if(t.placa===c.placa&&+t.km>m)m=+t.km;if(m>(+c.kmAtual||0)&&kmSynced[c.placa]!==m){kmSynced[c.placa]=m;try{await db.doc("carros/"+c.placa).update({kmAtual:m,kmAtualEm:isoToday()})}catch(e){console.warn(e)}}}}
 document.addEventListener("change",e=>{if(e.target.id==="cadMes")renderCaderno()});
 document.addEventListener("click",async e=>{
   if(e.target.closest("#cadCsv")){tripsCsv();return}
+  const cc=e.target.closest("[data-cadcsv]");if(cc){tripsCsv(cc.dataset.cadcsv);return}
   if(e.target.closest("#cadLeitoresSave")){const v=$("#cadLeitores").value.split(/[,;\s]+/).map(x=>x.trim().toLowerCase()).filter(Boolean);
     if(v.some(x=>!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x)))return toast("Tem um email fora do formato. Confira.");
     try{await db.doc("privado/acessos").set({leitores:v,atualizadoEm:new Date().toISOString()});toast(v.length?"Acesso ao caderno salvo":"Lista de leitores esvaziada")}catch(err){fail(err)}return}
