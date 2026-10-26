@@ -259,6 +259,7 @@ a{color:var(--brand)}
     </div>
     <nav class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="pendencias" aria-selected="true" type="button">Pendências<span class="n" id="pendN" hidden></span></button>
+      <button class="tab" role="tab" data-tab="fila" aria-selected="false" type="button">Lista do dia</button>
       <button class="tab" role="tab" data-tab="registrar" aria-selected="false" type="button">Registrar</button>
       <button class="tab" role="tab" data-tab="carros" aria-selected="false" type="button">Carros</button>
       <button class="tab" role="tab" data-tab="pessoas" aria-selected="false" type="button">Por pessoa</button>
@@ -321,6 +322,8 @@ a{color:var(--brand)}
 
   <section id="tab-pendencias"><div id="pend" style="display:flex;flex-direction:column;gap:18px"></div></section>
 
+  <section id="tab-fila" hidden><div style="display:flex;flex-direction:column;gap:18px"><p class="sub" style="margin:0">Tudo o que falta, de todos os carros, do mais simples pro mais difícil. Pra dividir na agenda.</p><div id="fila" style="display:flex;flex-direction:column;gap:18px"></div></div></section>
+
   <section id="tab-historico" hidden>
     <div style="display:flex;flex-direction:column;gap:14px">
       <div class="filters">
@@ -342,7 +345,7 @@ a{color:var(--brand)}
         <div class="secthead"><h3>Rotina e documentos por carro</h3></div>
         <div class="legend-row"><span><i class="sw ok"></i>Em dia</span><span><i class="sw warn"></i>Atenção</span><span><i class="sw bad"></i>Atrasado / vencido</span><span><i class="sw none"></i>Sem dado</span></div>
         <div class="bars" id="barsStatus"></div>
-        <p class="hint" style="margin:0">Cada carro tem 8 itens: lavagem, calibragem, água e óleo, troca de óleo, revisão, licenciamento, seguro e IPVA.</p>
+        <p class="hint" style="margin:0">Cada carro tem 7 itens: lavagem, calibragem, água e óleo (checagem e troca), revisão, licenciamento, seguro e IPVA.</p>
       </div>
       <div class="panel">
         <div class="secthead"><h3>Pendências abertas por carro</h3></div>
@@ -380,6 +383,7 @@ a{color:var(--brand)}
       <label>Situação<select id="evStatus"><option value="Finalizado">Feito</option><option value="Pendente">Pendente (a fazer)</option></select></label>
       <label><span id="evDataLbl">Feito em</span><input type="date" id="evData" required></label>
       <label class="full">Descrição<textarea id="evDesc" rows="2"></textarea></label>
+      <label data-e="pend">O que precisa<select id="evNivel"><option value="">Automático</option><option value="falar">Só falar com alguém</option><option value="levar">Levar o carro</option><option value="orcar">Fazer orçamento</option></select></label>
       <label data-e="pend">Responsável<select id="evAtr"></select></label>
       <label data-e="pend">Marcado para<input type="date" id="evAg"></label>
       <label data-e="pend">Horário (opcional)<input type="time" id="evHora"></label>
@@ -551,8 +555,8 @@ function revisao(c){
   if(!km)return{st:"ok",big:`Em ${nf.format(next)} km`,small:"km atual não informado"};
   const left=next-km;return{st:left<=0?"bad":left<=1000?"warn":"ok",big:left<=0?`Passou ${nf.format(-left)} km`:`Faltam ${nf.format(left)} km`,small:`próxima em ${nf.format(next)} km · última em ${nf.format(+c.revisaoKm)}`};
 }
-function routine(p,cat,key){
-  const e=lastDone(p,cat),every=+rules[key]||30;
+function routine(p,cat,key,also){
+  const e=[lastDone(p,cat),also&&lastDone(p,also)].filter(Boolean).sort((a,b)=>b.data.localeCompare(a.data))[0],every=+rules[key]||30;
   if(!e)return{st:"none",big:"Sem registro",small:`a cada ${every} dias`};
   const due=addDays(e.data,every),left=daysBetween(isoToday(),due);
   const st=left<0?"bad":left<=(+rules.aviso||0)?"warn":"ok";
@@ -573,7 +577,13 @@ function due(iso,what){
   return{st:d<=30?"warn":"ok",big:d<=30?`Vence em ${d} ${plural(d,"dia","dias")}`:"Em dia",small:"até "+br(iso)};
 }
 function lic(c){const y=new Date().getFullYear();if(!c.licAno)return{st:"none",big:"Sem dado",small:"cadastrar ano pago"};return +c.licAno>=y?{st:"ok",big:`${c.licAno} pago`,small:"exercício em dia"}:{st:"bad",big:`Último: ${c.licAno}`,small:`falta pagar ${y}`}}
-function statusList(c){return[...ROUTINE.map(([cat,key])=>[cat,routine(c.placa,cat,key)]),["Troca de óleo",oil(c)],["Revisão",revisao(c)],["Licenciamento",lic(c)],["Seguro",due(c.seguro,"vencimento")],["IPVA",due(c.ipva,"vencimento")]]}
+/* água e óleo é um item só: checagem a cada X dias + troca por km; vale o que estiver pior */
+function aguaOleo(c){
+  const a=routine(c.placa,"Água e óleo","agua","Troca de óleo"),o=oil(c),rk={bad:0,warn:1,none:2,ok:3},w=rk[o.st]<rk[a.st]?o:a;
+  return{...w,big:w===o?"Troca: "+o.big:a.big,small:`checar: ${a.small} · troca: ${o.small}`};
+}
+const routineOf=(c,cat,key)=>cat==="Água e óleo"?aguaOleo(c):routine(c.placa,cat,key);
+function statusList(c){return[...ROUTINE.map(([cat,key])=>[cat,routineOf(c,cat,key)]),["Revisão",revisao(c)],["Licenciamento",lic(c)],["Seguro",due(c.seguro,"vencimento")],["IPVA",due(c.ipva,"vencimento")]]}
 function attention(c){return statusList(c).filter(([,s])=>s.st==="bad"||s.st==="warn"||s.st==="none")}
 
 /* ---------- agenda ---------- */
@@ -617,7 +627,10 @@ function lineDone(e,{withCar}={}){
 }
 const ORC_CATS=["Revisão","Mecânica","Pneus","Estética"];
 const ETAPAS=[["orcar","Fazer orçamento"],["orcado","Orçamento feito"],["aguardando","Aguardando aprovação"],["aprovado","Aprovado"]];
-const etapaOf=e=>e.etapa||(ORC_CATS.includes(e.categoria)?"orcar":null);
+const FALAR_CATS=["Documentos","Seguro","IPVA","Licenciamento","Outro"];
+/* dificuldade: falar com alguém < levar o carro < fazer orçamento */
+const nivelOf=e=>e.etapa==="aprovado"?"levar":e.nivel||(ORC_CATS.includes(e.categoria)?"orcar":FALAR_CATS.includes(e.categoria)?"falar":"levar");
+const etapaOf=e=>e.etapa||(nivelOf(e)==="orcar"?"orcar":null);
 function stepper(e){const et=etapaOf(e);if(!et)return"";const i=ETAPAS.findIndex(x=>x[0]===et),ap=rules.aprovador||"Renato";
   const L=["Orçamento",`Enviar pro ${ap}`,`Aprovação do ${ap}`,"Serviço feito"];
   return `<span class="steps">${L.map((l,j)=>`<span class="${j<i?"on":j===i?"cur":""}">${j<i?"✓ ":""}${esc(l)}</span>`).join("")}</span>`}
@@ -734,6 +747,13 @@ function render(){
   ].join(""):`<div class="empty">Carregando…</div>`;
   $("#pend").style.gap="10px";
 
+  // lista do dia: tudo junto, do mais simples pro mais difícil
+  const rotLate=cars.flatMap(c=>ROUTINE.map(([cat,key])=>[c,cat,routineOf(c,cat,key)]).filter(([c2,cat,s])=>(s.st==="bad"||s.st==="warn"||s.st==="none")&&!pendingOf(c2.placa).some(e=>e.categoria===cat)));
+  const NIVEIS=[["falar","Só falar com alguém","ligar, pedir, confirmar, comprar"],["levar","Levar o carro","rotina e serviço já aprovado"],["orcar","Fazer orçamento","levar pra orçar, mandar pro aprovador, depois fazer"]];
+  const byWhen=(a,b)=>(a.agendado||"9999").localeCompare(b.agendado||"9999")||carName(a.placa).localeCompare(carName(b.placa));
+  $("#fila").innerHTML=loaded?NIVEIS.map(([k,t,sub])=>{const l=pend.filter(e=>nivelOf(e)===k).sort(byWhen),r=k==="levar"?rotLate:[],n=l.length+r.length;
+    return `<section class="panel" style="gap:8px"><div class="secthead"><h3>${esc(t)}</h3><span class="sub">${n} ${n===1?"item":"itens"} · ${esc(sub)}</span></div><div class="lines">${l.map(e=>linePend(e,{withCar:true})).join("")}${r.map(([c,cat,s])=>`<div class="line st-${s.st==="bad"?"bad":"warn"}"><span class="d">rotina</span><span class="k">${esc(c.modelo)} · ${esc(cat)}</span><span class="x">${esc(s.big)}<small>${esc(s.small)}</small></span><span class="a"><button class="btn small" type="button" data-agendar="${esc(c.placa)}|${esc(cat)}">Agendar</button></span></div>`).join("")}${n?"":`<div class="sub" style="padding:8px 0">Nada aqui.</div>`}</div></section>`}).join(""):`<div class="empty">Carregando…</div>`;
+
   const fc=$("#fCar").value,fk=$("#fCat").value,fp=$("#fPago").value;
   $("#fCar").innerHTML=`<option value="">Todos</option>`+cars.map(c=>`<option value="${esc(c.placa)}">${esc(c.modelo)}</option>`).join("")+`<option value="GERAL">Geral</option>`;$("#fCar").value=fc;
   const rows=events.filter(e=>e.status!=="Pendente"&&(!fc||e.placa===fc)&&(!fk||e.categoria===fk)&&(!fp||e.pago===fp)).sort((a,b)=>(b.data||"").localeCompare(a.data||""));
@@ -753,7 +773,7 @@ function render(){
   $("#pessoasNote").textContent=mcp?"Ao salvar uma pendência com responsável e data marcada, o convite vai pra agenda da pessoa.":"Use “pôr na agenda” em cada item pra criar o evento no Google Agenda com o responsável como convidado.";
   const byPerson=n=>pend.filter(e=>(e.atribuido||"")===n).sort((a,b)=>(a.agendado||"9999").localeCompare(b.agendado||"9999"));
   $("#porPessoa").innerHTML=loaded?people.map(p=>{const l=byPerson(p.nome);return `<section class="panel" style="gap:8px"><div class="secthead"><h3>Pendências ${esc(p.nome)}</h3><span class="sub">${l.length} ${l.length===1?"item":"itens"}</span></div><div class="lines">${l.length?l.map(e=>linePend(e,{withCar:true})).join(""):`<div class="sub" style="padding:8px 0">Nada atribuído.</div>`}</div></section>`}).join(""):"";
-  const noOne=byPerson("");const toSched=cars.flatMap(c=>ROUTINE.map(([cat,key])=>[c,cat,routine(c.placa,cat,key)]).concat([[c,"Troca de óleo",oil(c)]]).filter(([c2,cat,s])=>(s.st==="bad"||s.st==="warn"||s.st==="none")&&!pendingOf(c2.placa).some(e=>e.categoria===cat)));
+  const noOne=byPerson("");const toSched=cars.flatMap(c=>ROUTINE.map(([cat,key])=>[c,cat,routineOf(c,cat,key)]).filter(([c2,cat,s])=>(s.st==="bad"||s.st==="warn"||s.st==="none")&&!pendingOf(c2.placa).some(e=>e.categoria===cat)));
   $("#semResp").innerHTML=loaded?fold("semresp",`<span class="nm"><b>Sem responsável</b><span>escolha quem faz e quando o carro vai estar livre</span></span>`,`
     <div class="lines">${noOne.map(e=>linePend(e,{withCar:true})).join("")}${toSched.map(([c,cat,s])=>`<div class="line st-${s.st==="bad"?"bad":"warn"}"><span class="d">rotina</span><span class="k">${esc(c.modelo)} · ${esc(cat)}</span><span class="x">${esc(s.big)}<small>${esc(s.small)}</small></span><span class="a"><button class="btn small" type="button" data-agendar="${esc(c.placa)}|${esc(cat)}">Agendar</button></span></div>`).join("")}${!noOne.length&&!toSched.length?`<div class="sub" style="padding:8px 0">Tudo atribuído.</div>`:""}</div>`):"";
 
@@ -802,7 +822,7 @@ function renderCars(){
 }
 
 /* ---------- abas ---------- */
-function showTab(n){if(n==="carros"&&typeof carView!=="undefined"&&document.querySelector('.tab[data-tab="carros"][aria-selected="true"]')){carView=null;renderCars()}document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===n));["registrar","carros","pessoas","pendencias","historico","documentos","caderno","situacao"].forEach(k=>$("#tab-"+k).hidden=k!==n);try{localStorage.setItem("frota-tab3",n)}catch{}}
+function showTab(n){if(n==="carros"&&typeof carView!=="undefined"&&document.querySelector('.tab[data-tab="carros"][aria-selected="true"]')){carView=null;renderCars()}document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===n));["registrar","carros","pessoas","pendencias","fila","historico","documentos","caderno","situacao"].forEach(k=>$("#tab-"+k).hidden=k!==n);try{localStorage.setItem("frota-tab3",n)}catch{}}
 document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>showTab(t.dataset.tab)));
 try{const s=localStorage.getItem("frota-tab3");if(s&&$("#tab-"+s))showTab(s)}catch{}
 $("#fCat").innerHTML=`<option value="">Todos</option>`+CATS.map(c=>`<option>${c}</option>`).join("");
@@ -820,7 +840,7 @@ function openEvent(ev,done){
   $("#evCarro").value=ev.placa;$("#evCat").value=ev.categoria;$("#evStatus").value=done?"Finalizado":ev.status;
   $("#evData").value=done?"":(ev.data||"");$("#evDesc").value=ev.descricao||"";$("#evResp").value=ev.responsavel||"";$("#evLocal").value=ev.local||"";
   $("#evKm").value=ev.km??"";$("#evValor").value=ev.valor??"";$("#evPago").value=ev.pago||"";
-  $("#evAtr").innerHTML=personOpts(ev.atribuido||"");$("#evAg").value=ev.agendado||"";$("#evHora").value=ev.hora||"";$("#evCal").checked=!ev.agendaEnviada;
+  $("#evAtr").innerHTML=personOpts(ev.atribuido||"");$("#evAg").value=ev.agendado||"";$("#evHora").value=ev.hora||"";$("#evNivel").value=ev.nivel||"";$("#evCal").checked=!ev.agendaEnviada;
   if(done&&!ev.responsavel&&ev.atribuido)$("#evResp").value=ev.atribuido;
   $("#evAsk").hidden=!done;$("#evTitle").textContent=done?`Concluir: ${ev.categoria} · ${carName(ev.placa)}`:ev._new?`Agendar: ${ev.categoria} · ${carName(ev.placa)}`:"Editar registro";$("#evDel").hidden=!!ev._new;
   document.querySelector('[data-e="anexo"]').hidden=!assets&&!editingEvent.anexos.length;$("#evFileInput").hidden=!assets;
@@ -837,7 +857,7 @@ $("#formEvento").addEventListener("submit",async ev=>{
     const novos=evNewFiles.length&&assets?await uploadAll(evNewFiles):[];
     const body={placa:$("#evCarro").value,categoria:$("#evCat").value,status:$("#evStatus").value,data:$("#evData").value,descricao:$("#evDesc").value.trim(),responsavel:pend?(editingEvent.responsavel||""):$("#evResp").value.trim(),local:$("#evLocal").value.trim(),
       atribuido:$("#evAtr").value,agendado:$("#evAg").value||null,hora:$("#evHora").value||null,agendaEnviada:!!editingEvent.agendaEnviada,agendaId:editingEvent.agendaId||null,
-      km:pend?null:num($("#evKm").value),valor:pend?null:num($("#evValor").value),pago:pend?null:($("#evPago").value||null),anexos:[...editingEvent.anexos,...novos],etapa:editingEvent.etapa||null,orcamento:editingEvent.orcamento||null,aprovacao:editingEvent.aprovacao||null,enviadoEm:editingEvent.enviadoEm||null,criadoEm:editingEvent.criadoEm||new Date().toISOString(),atualizadoEm:new Date().toISOString()};
+      km:pend?null:num($("#evKm").value),valor:pend?null:num($("#evValor").value),pago:pend?null:($("#evPago").value||null),anexos:[...editingEvent.anexos,...novos],nivel:pend?($("#evNivel").value||null):(editingEvent.nivel||null),etapa:editingEvent.etapa||null,orcamento:editingEvent.orcamento||null,aprovacao:editingEvent.aprovacao||null,enviadoEm:editingEvent.enviadoEm||null,criadoEm:editingEvent.criadoEm||new Date().toISOString(),atualizadoEm:new Date().toISOString()};
     let calFail=null;
     const schedChanged=body.agendado!==(editingEvent.agendado||null)||body.atribuido!==(editingEvent.atribuido||"")||body.hora!==(editingEvent.hora||null);
     if(pend&&$("#evCal").checked&&body.atribuido&&body.agendado&&(!editingEvent.agendaEnviada||schedChanged)){const r=await sendCalendar(body);if(r.ok){body.agendaEnviada=true;body.agendaId=r.id}else calFail=r.why}
