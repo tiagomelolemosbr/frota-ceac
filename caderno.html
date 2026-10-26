@@ -43,8 +43,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:1
 h1{font-family:var(--f-head);font-size:22px;font-weight:700;margin:0;line-height:1.2;text-wrap:balance}
 .label{font-family:var(--f-head);font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 label{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:15px}
-input,select{font:inherit;font-size:19px;color:var(--ink);background:var(--surface);border:1.5px solid var(--line-strong);border-radius:12px;padding:13px 14px;width:100%;min-width:0}
-input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+input,select,textarea{font:inherit;font-size:19px;color:var(--ink);background:var(--surface);border:1.5px solid var(--line-strong);border-radius:12px;padding:13px 14px;width:100%;min-width:0}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
 .big{font-family:var(--f-mono);font-size:28px;letter-spacing:.04em;text-align:center}
 button{font:inherit;cursor:pointer}
 .btn{border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:12px;padding:14px 16px;font-family:var(--f-head);font-weight:600;font-size:17px;width:100%}
@@ -63,6 +63,7 @@ button{font:inherit;cursor:pointer}
 .seg button[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
 .calc{display:flex;justify-content:space-between;gap:12px;align-items:baseline;background:var(--bg);border-radius:12px;padding:12px 14px;font-size:15px}
 .calc b{font-family:var(--f-head);font-size:22px}
+.calc.warn{background:var(--warn-bg);color:var(--warn)}
 .calc.bad{background:var(--bad-bg);color:var(--bad)}
 .hint{font-size:14px;color:var(--muted);margin:0}
 .err{background:var(--bad-bg);color:var(--bad);border-radius:12px;padding:12px 14px;font-weight:700;font-size:15px}
@@ -70,6 +71,11 @@ button{font:inherit;cursor:pointer}
 .done .ok{width:64px;height:64px;border-radius:50%;background:var(--ok-bg);color:var(--ok);display:grid;place-items:center;font-size:34px;font-weight:700}
 .sel{display:flex;align-items:center;gap:10px;justify-content:space-between}
 .sel b{font-family:var(--f-head);font-size:20px}
+textarea{font-size:17px;resize:vertical;min-height:84px}
+.opt{font-weight:400;color:var(--muted);font-size:13px}
+.inc{display:flex;flex-direction:column;gap:10px;border:1.5px solid var(--line-strong);border-radius:14px;padding:14px}
+.inc.on{border-color:var(--bad);background:var(--bad-bg)}
+.seg button.bad[aria-pressed="true"]{border-color:var(--bad);background:var(--surface);color:var(--bad)}
 .install{border:1px dashed var(--line-strong);border-radius:14px;padding:14px;font-size:14.5px;color:var(--muted)}
 .install b{color:var(--ink)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -78,17 +84,6 @@ button{font:inherit;cursor:pointer}
 <body>
 <div class="wrap">
   <header class="top"><span class="mark" aria-label="CEAC">CEAC</span><span><b>Caderno dos carros</b><span>anote cada vez que usar o carro</span></span></header>
-
-  <!-- código -->
-  <section class="card" id="stepCode" hidden>
-    <h1>Digite o código do caderno</h1>
-    <p class="hint">É o código de 4 números que o Tiago ou o Davi passaram. Você só digita uma vez neste celular.</p>
-    <form id="formCode" style="display:flex;flex-direction:column;gap:14px">
-      <input id="code" class="big" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" aria-label="Código do caderno" required>
-      <div class="err" id="codeErr" hidden>Código não confere. Confira com o Tiago ou o Davi.</div>
-      <button class="btn brand" type="submit" id="codeBtn">Entrar</button>
-    </form>
-  </section>
 
   <!-- registro -->
   <section class="card" id="stepForm" hidden>
@@ -106,8 +101,14 @@ button{font:inherit;cursor:pointer}
         <input id="obj" maxlength="80" placeholder="Qual atividade? ex.: levar material" hidden>
       </div>
       <label>Km no painel agora<input id="km" class="big" type="number" inputmode="numeric" min="0" required placeholder="ex.: 84210"></label>
-      <div class="calc" id="calc" hidden></div>
       <p class="hint" id="last"></p>
+      <div class="calc" id="calc" hidden></div>
+      <label>Observação <span class="opt">(opcional)</span><textarea id="obs" maxlength="500" rows="2" placeholder="ex.: deixei na garagem do CEAC, tanque na metade"></textarea></label>
+      <div class="inc" id="incBox">
+        <span style="font-weight:700;font-size:15px">Aconteceu alguma coisa com o carro?</span>
+        <div class="seg"><button type="button" data-inc="nao" aria-pressed="true">Não, tudo certo</button><button type="button" class="bad" data-inc="sim" aria-pressed="false">Sim</button></div>
+        <textarea id="inc" maxlength="1000" rows="3" placeholder="Conte o que foi: batida, arranhão, pneu, barulho, luz acesa no painel… Onde e quando." hidden></textarea>
+      </div>
       <div class="err" id="tripErr" hidden></div>
       <button class="btn brand" type="submit" id="saveBtn">Anotar</button>
     </form>
@@ -124,12 +125,11 @@ button{font:inherit;cursor:pointer}
   <div class="install" id="install">
     <b>Deixe na tela do celular:</b> no iPhone, toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>. No Android, toque nos <b>três pontinhos</b> e em <b>Adicionar à tela inicial</b>.
   </div>
-  <p class="hint" style="text-align:center"><button class="link" type="button" id="forget">sair deste celular</button></p>
-</div>
+  </div>
 
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {getFirestore,collection,doc,getDocs,query,where,limit,setDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore,collection,doc,getDoc,getDocs,writeBatch} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 const app=initializeApp({apiKey:"AIzaSyBU5oSbfioSnDQgkvJoq5pE9NHQRRp8T-g",authDomain:"frota-ceac.firebaseapp.com",projectId:"frota-ceac",storageBucket:"frota-ceac.firebasestorage.app",messagingSenderId:"1077001594650",appId:"1:1077001594650:web:b5c0931935270c89856ea3"});
 const db=getFirestore(app);
 const $=s=>document.querySelector(s);
@@ -141,18 +141,11 @@ const br=iso=>iso?iso.split("-").reverse().join("/"):"";
 const plate=p=>`<span class="plate"><span class="strip">BRASIL</span><span class="num">${esc(p)}</span></span>`;
 if(matchMedia("(display-mode: standalone)").matches||navigator.standalone)$("#install").hidden=true;
 
-let code=store.get("caderno-codigo"),cars=[],car=null,lastKm=null,lastTrip=null,obj=null;
+/* sem código: quem tem o link anota. O último km de cada carro fica público em ultimoKm/{placa} (só km, data e iniciais) */
+const SALTO=3000; // mais que isso num uso só pede confirmação
+let cars=[],car=null,lastKm=null,lastInfo=null,obj=null,inc=false,confirmado=false;
 const params=new URLSearchParams(location.search);
-const show=id=>["#stepCode","#stepForm","#stepDone"].forEach(s=>$(s).hidden=s!==id);
-const tripsCol=c=>collection(db,"caderno",c,"viagens");
-
-async function checkCode(c){try{await getDocs(query(tripsCol(c),limit(1)));return true}catch(e){return false}}
-
-$("#formCode").addEventListener("submit",async e=>{
-  e.preventDefault();const c=$("#code").value.trim();$("#codeErr").hidden=true;$("#codeBtn").disabled=true;
-  if(await checkCode(c)){code=c;store.set("caderno-codigo",c);startForm()}else $("#codeErr").hidden=false;
-  $("#codeBtn").disabled=false;
-});
+const show=id=>["#stepForm","#stepDone"].forEach(s=>$(s).hidden=s!==id);
 
 async function loadCars(){
   const s=await getDocs(collection(db,"carros"));
@@ -162,58 +155,59 @@ async function loadCars(){
 async function pickCar(p){
   car=cars.find(c=>c.placa===p);if(!car)return;store.set("caderno-carro",p);
   $("#carPick").hidden=true;$("#formTrip").hidden=false;$("#carName").textContent=car.modelo+" · "+car.placa;
-  lastKm=car.kmAtual||null;lastTrip=null;$("#last").textContent="Buscando o último km anotado…";
-  try{const s=await getDocs(query(tripsCol(code),where("placa","==",p)));
-    s.docs.forEach(d=>{const t=d.data();if(+t.km>(lastKm||0)){lastKm=+t.km;lastTrip=t}});
-  }catch(e){}
-  $("#last").textContent=lastKm?`Último km anotado: ${nf.format(lastKm)}${lastTrip?` em ${br(lastTrip.data)} (${lastTrip.iniciais})`:""}.`:"Ainda não tem km anotado deste carro. O km rodado aparece a partir do próximo registro.";
+  lastKm=+car.kmAtual||null;lastInfo=car.kmAtualEm?{data:car.kmAtualEm}:null;$("#last").textContent="Buscando o último km anotado…";
+  try{const u=await getDoc(doc(db,"ultimoKm",p));if(u.exists()&&+u.data().km>=(lastKm||0)){lastKm=+u.data().km;lastInfo=u.data()}}catch(e){}
+  $("#last").innerHTML=lastKm?`Último km anotado: <b>${nf.format(lastKm)}</b>${lastInfo?.data?` em ${br(lastInfo.data)}`:""}${lastInfo?.iniciais?` (${esc(lastInfo.iniciais)})`:""}.`:"Ainda não tem km anotado deste carro. O km rodado aparece a partir do próximo registro.";
   calc();
 }
 function calc(){
-  const km=+$("#km").value,el=$("#calc");
+  const km=+$("#km").value,el=$("#calc");confirmado=false;
   if(!km||!lastKm){el.hidden=true;return}
-  const d=km-lastKm;el.hidden=false;el.className="calc"+(d<0?" bad":"");
-  el.innerHTML=d<0?`<span>O km ficou menor que o último anotado (${nf.format(lastKm)}). Confira o painel.</span>`:`<span>Você rodou</span><b>${nf.format(d)} km</b>`;
+  const d=km-lastKm;el.hidden=false;el.className="calc"+(d<0?" bad":d>SALTO?" warn":"");
+  el.innerHTML=d<0?`<span>O km ficou menor que o último anotado (${nf.format(lastKm)}). Confira o painel.</span>`:`<span>Você rodou${d>SALTO?" (confira, é bastante)":""}</span><b>${nf.format(d)} km</b>`;
 }
 $("#km").addEventListener("input",calc);
 document.addEventListener("click",e=>{
   const b=e.target.closest("[data-car]");if(b){pickCar(b.dataset.car);return}
   const o=e.target.closest("[data-obj]");if(o){obj=o.dataset.obj;document.querySelectorAll("[data-obj]").forEach(x=>x.setAttribute("aria-pressed",x===o));$("#obj").hidden=obj!=="ceac";if(obj==="ceac")$("#obj").focus();return}
+  const i=e.target.closest("[data-inc]");if(i){setInc(i.dataset.inc==="sim");if(inc)$("#inc").focus();return}
 });
+function setInc(on){inc=on;document.querySelectorAll("[data-inc]").forEach(x=>x.setAttribute("aria-pressed",(x.dataset.inc==="sim")===on));$("#inc").hidden=!on;$("#incBox").classList.toggle("on",on)}
 $("#changeCar").addEventListener("click",()=>{$("#formTrip").hidden=true;$("#carPick").hidden=false});
 $("#ini").addEventListener("input",e=>{e.target.value=e.target.value.toUpperCase()});
 
 $("#formTrip").addEventListener("submit",async e=>{
   e.preventDefault();const err=$("#tripErr");err.hidden=true;
-  const ini=$("#ini").value.trim().toUpperCase(),km=Math.round(+$("#km").value),data=$("#data").value;
-  if(!obj){err.textContent="Escolha se foi uso pessoal ou pelo CEAC.";err.hidden=false;return}
-  if(obj==="ceac"&&!$("#obj").value.trim()){err.textContent="Diga rapidinho qual foi a atividade.";err.hidden=false;return}
-  if(lastKm&&km<lastKm){err.textContent=`O km (${nf.format(km)}) está menor que o último anotado (${nf.format(lastKm)}). Confira o número do painel.`;err.hidden=false;return}
-  const rodado=lastKm?km-lastKm:null;
+  const ini=$("#ini").value.trim().toUpperCase(),km=Math.round(+$("#km").value),data=$("#data").value,obs=$("#obs").value.trim(),incTxt=$("#inc").value.trim();
+  const say=t=>{err.textContent=t;err.hidden=false};
+  if(!obj)return say("Escolha se foi uso pessoal ou pelo CEAC.");
+  if(obj==="ceac"&&!$("#obj").value.trim())return say("Diga rapidinho qual foi a atividade.");
+  if(inc&&!incTxt)return say("Conte o que aconteceu com o carro, ou marque “Não, tudo certo”.");
+  const baixo=lastKm&&km<lastKm,salto=lastKm&&km-lastKm>SALTO;
+  if((baixo||salto)&&!confirmado){confirmado=true;return say(baixo?`O km (${nf.format(km)}) está menor que o último anotado (${nf.format(lastKm)}). Confira o número do painel. Se estiver certo mesmo, toque em Anotar de novo.`:`Deu ${nf.format(km-lastKm)} km rodados desde o último registro. Confira o número do painel. Se estiver certo mesmo, toque em Anotar de novo.`)}
+  const rodado=lastKm&&!baixo?km-lastKm:null;
   const body={placa:car.placa,data,iniciais:ini,pessoal:obj==="pessoal",objetivo:obj==="pessoal"?ini:$("#obj").value.trim(),km,kmAnterior:lastKm,rodado,criadoEm:new Date().toISOString()};
+  if(obs)body.obs=obs;if(inc)body.incidente=incTxt;if(baixo||salto)body.kmConferir=true;
   $("#saveBtn").disabled=true;$("#saveBtn").textContent="Anotando…";
   try{
-    await setDoc(doc(tripsCol(code)),body);
+    const b=writeBatch(db);b.set(doc(collection(db,"viagens")),body);
+    if(!baixo)b.set(doc(db,"ultimoKm",car.placa),{km,data,iniciais:ini,criadoEm:body.criadoEm});
+    await b.commit();
     store.set("caderno-ini",ini);
     $("#doneTitle").textContent="Anotado!";
-    $("#doneText").textContent=`${car.modelo}, ${br(data)}, ${nf.format(km)} km${rodado!=null?` · rodou ${nf.format(rodado)} km`:""}.`;
+    $("#doneText").textContent=`${car.modelo}, ${br(data)}, ${nf.format(km)} km${rodado!=null?` · rodou ${nf.format(rodado)} km`:""}.${inc?" O incidente já foi pro painel do Tiago e do Davi.":""}`;
     show("#stepDone");
-  }catch(ex){
-    if(ex?.code==="permission-denied"){store.del("caderno-codigo");err.textContent="O código do caderno mudou. Digite o código novo.";err.hidden=false;setTimeout(()=>{show("#stepCode")},1800)}
-    else{err.textContent="Não deu pra anotar agora. Confira a internet e tente de novo.";err.hidden=false}
-  }finally{$("#saveBtn").disabled=false;$("#saveBtn").textContent="Anotar"}
+  }catch(ex){say("Não deu pra anotar agora. Confira a internet e tente de novo.")}
+  finally{$("#saveBtn").disabled=false;$("#saveBtn").textContent="Anotar"}
 });
-$("#again").addEventListener("click",()=>{$("#km").value="";obj=null;document.querySelectorAll("[data-obj]").forEach(x=>x.setAttribute("aria-pressed","false"));$("#obj").value="";$("#obj").hidden=true;$("#calc").hidden=true;show("#stepForm");pickCar(car.placa)});
-$("#forget").addEventListener("click",()=>{store.del("caderno-codigo");store.del("caderno-ini");store.del("caderno-carro");code=null;show("#stepCode")});
+$("#again").addEventListener("click",()=>{$("#km").value="";$("#obs").value="";$("#inc").value="";setInc(false);obj=null;document.querySelectorAll("[data-obj]").forEach(x=>x.setAttribute("aria-pressed","false"));$("#obj").value="";$("#obj").hidden=true;$("#calc").hidden=true;show("#stepForm");pickCar(car.placa)});
 
-async function startForm(){
+(async()=>{
+  store.del("caderno-codigo");
   show("#stepForm");$("#data").value=isoToday();$("#ini").value=store.get("caderno-ini")||"";
   try{await loadCars()}catch{$("#cars").innerHTML=`<p class="err">Não deu pra carregar os carros. Confira a internet.</p>`;return}
   const p=params.get("carro")||store.get("caderno-carro");
   if(p&&cars.some(c=>c.placa===p))pickCar(p);
-}
-(async()=>{
-  if(code&&await checkCode(code)){store.set("caderno-codigo",code);startForm()}else{store.del("caderno-codigo");show("#stepCode")}
 })();
 </script>
 </body>
