@@ -211,7 +211,7 @@ async function loadCars(){
 }
 function pickCar(p){
   car=cars.find(c=>c.placa===p);if(!car)return;store.set("caderno-carro",p);
-  $("#carName").textContent=car.modelo+" · "+car.placa;
+  $("#carName").innerHTML=`${esc(car.modelo)} <small style="font-family:var(--f-mono);font-size:14px;color:var(--muted)">${esc(car.placa)}</small>`;
   $("#carDocs").hidden=!car.drive;if(car.drive)$("#carDocs").href=car.drive;
   const u=ultimos[p];lastKm=u?.km||null;
   $("#last").innerHTML=lastKm?`<span><span class="label">Último km registrado</span><small>${[u.data&&br(u.data),u.iniciais,u.fonte&&"no serviço de "+u.fonte.toLowerCase()].filter(Boolean).map(esc).join(" · ")}</small></span><b>${nf.format(lastKm)}</b>`:`<span><span class="label">Último km registrado</span><small>Ainda nenhum. O seu vai ser o primeiro; o km rodado aparece a partir do próximo.</small></span>`;
